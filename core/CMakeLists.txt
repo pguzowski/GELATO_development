@@ -1,0 +1,5 @@
+file(GLOB GDCGCore_sources "src/*.cpp")
+add_library(GDCGCore SHARED ${GDCGCore_sources})
+target_compile_features(GDCGCore PUBLIC cxx_std_14)
+target_link_libraries(GDCGCore PRIVATE CLHEP::Vector)
+target_include_directories(GDCGCore PUBLIC include PRIVATE ${CLHEP_INCLUDE_DIRS})
