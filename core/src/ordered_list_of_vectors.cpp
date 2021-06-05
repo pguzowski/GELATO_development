@@ -1,13 +1,13 @@
-#include "ordered_list_of_vectors.hpp"
+#include "dkgen/core/ordered_list_of_vectors.hpp"
 
 #include <utility>
 #include <algorithm>
 
-size_t decaygen::ordered_list_of_vectors::size() const {
+size_t dkgen::core::ordered_list_of_vectors::size() const {
   return map.size();
 }
 
-const decaygen::vector3& decaygen::ordered_list_of_vectors::first() const {
+const dkgen::core::vector3& dkgen::core::ordered_list_of_vectors::first() const {
   // throws exception if empty
   if(map.empty()) {
     throw std::runtime_error("empty list of vectors");
@@ -15,7 +15,7 @@ const decaygen::vector3& decaygen::ordered_list_of_vectors::first() const {
   return map.begin()->second;
 }
 
-const decaygen::vector3& decaygen::ordered_list_of_vectors::last() const {
+const dkgen::core::vector3& dkgen::core::ordered_list_of_vectors::last() const {
   // throws exception if empty
   if(map.empty()) {
     throw std::runtime_error("empty list of vectors");
@@ -23,12 +23,12 @@ const decaygen::vector3& decaygen::ordered_list_of_vectors::last() const {
   return map.rbegin()->second;
 }
 
-decaygen::ordered_list_of_vectors& decaygen::ordered_list_of_vectors::add(double pos, const decaygen::vector3& vec) {
+dkgen::core::ordered_list_of_vectors& dkgen::core::ordered_list_of_vectors::add(double pos, const dkgen::core::vector3& vec) {
   map.emplace(pos, vec);
   return *this;
 }
 
-decaygen::ordered_list_of_vectors& decaygen::ordered_list_of_vectors::add(double pos, decaygen::vector3&& vec) {
+dkgen::core::ordered_list_of_vectors& dkgen::core::ordered_list_of_vectors::add(double pos, dkgen::core::vector3&& vec) {
   map.emplace(pos,std::move(vec));
   return *this;
 }

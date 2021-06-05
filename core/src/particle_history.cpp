@@ -1,58 +1,27 @@
-#include "particle_history.hpp"
+#include "dkgen/core/particle_history.hpp"
 
-#include <cstdio>
+#include <cstdio> // for std::snprintf
 
-#include "decaying_particle_info.hpp"
+#include "dkgen/core/decaying_particle_info.hpp"
 
-/*
-decaygen::particle_history& decaygen::particle_history::add_final_state(const std::shared_ptr<decaygen::decaying_particle_info>& p) {
-  final_states[++last_daughter] = p;
-  return *this;
-}
-decaygen::particle_history& decaygen::particle_history::add_final_state(std::shared_ptr<decaygen::decaying_particle_info>&& p) {
-  final_states[++last_daughter] = std::move(p);
-  return *this;
+dkgen::core::particle_history::particle_history() : total_weight(1.) {
 }
 
-decaygen::particle_history& decaygen::particle_history::prepend_particle(const std::shared_ptr<decaygen::decaying_particle_info>& p) {
-  total_weight *= p->decay_weight();
-  parents[--last_parent] = p;
-  return *this;
-}
-decaygen::particle_history& decaygen::particle_history::prepend_particle(std::shared_ptr<decaygen::decaying_particle_info>&& p) {
-  total_weight *= p->decay_weight();
-  parents[--last_parent] = std::move(p);
-  return *this;
+dkgen::core::particle_history::~particle_history() {
 }
 
-decaygen::particle_history& decaygen::particle_history::prepend_particle(std::shared_ptr<decaygen::decaying_particle_info>&& p) {
-  total_weight *= p->decay_weight();
-  parents[--last_parent] = std::move(p);
-  return *this;
-}
-*/
-
-decaygen::particle_history::particle_history() : total_weight(1.) {
-}
-
-decaygen::particle_history::~particle_history() {
-}
-
-decaygen::particle_history& decaygen::particle_history::build_hierarchy(std::unique_ptr<decaying_particle_info>&& p) {
+dkgen::core::particle_history& dkgen::core::particle_history::build_hierarchy(std::unique_ptr<decaying_particle_info>&& p) {
   parent = std::move(p);
   if(parent) {
     event_counter++;
-    last_particle_id=1;
-    hierarchy[last_particle_id] = parent.get();
-    particles_to_particle_ids[parent.get()] = last_particle_id;
+    hierarchy.reserve(parent->get_number_of_particles_in_hierarchy());
+    hierarchy.push_back(parent.get());
     total_weight *= parent->decay_weight();
     std::function<void(decaying_particle_info_ptr)> traverse = [this,&traverse](decaying_particle_info_ptr current_parent) -> void {
       auto const& daughters = current_parent->get_children();
 
       for(auto const& d : daughters) {
-        last_particle_id++;
-        hierarchy[last_particle_id] = d.get();
-        particles_to_particle_ids[d.get()] = last_particle_id;
+        hierarchy.push_back(d.get());
         total_weight *= d->decay_weight();
       }
       // double-traversal because we have to flatten the hierarchy horizontally for hepevt format
@@ -65,29 +34,27 @@ decaygen::particle_history& decaygen::particle_history::build_hierarchy(std::uni
   return *this;
 }
 
-decaygen::hepevt_info decaygen::particle_history::build_hepevt_output() const {
-  return build_hepevt_output_with_translation_followed_by_rotation(decaygen::fourvector{},decaygen::rotation{});
+dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output() const {
+  return build_hepevt_output_with_translation_followed_by_rotation(dkgen::core::fourvector{},dkgen::core::rotation{});
 }
 
 
-decaygen::hepevt_info decaygen::particle_history::build_hepevt_output_with_translation_followed_by_rotation(
-    const decaygen::fourvector& translation, const decaygen::rotation& rot) const {
+dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output_with_translation_followed_by_rotation(
+    const dkgen::core::fourvector& translation, const dkgen::core::rotation& rot) const {
   if(hierarchy.empty()) {
     throw std::runtime_error("particle_history: tried to build hepevt output for empty hierarchy");
   }
-  decaygen::hepevt_info ret;
+  dkgen::core::hepevt_info ret;
   ret.event_counter = event_counter;
   ret.total_weight = total_weight;
-  for(auto const& h : hierarchy) {
-    auto p = h.second;
-    
+  for(auto const& p : hierarchy) {
 
-    auto find_pid = [this](auto p) {
-      auto pid = particles_to_particle_ids.find(p);
-      if (pid == particles_to_particle_ids.end()) {
-        throw std::runtime_error("Undefined pointer found in particle_history::particles_to_particle_ids");
+    auto find_pid = [this](auto p) -> int {
+      auto pitr = std::find(hierarchy.begin(), hierarchy.end(), p);
+      if (pitr == hierarchy.end()) {
+        throw std::runtime_error("Undefined pointer found in particle_history::hierarchy");
       }
-      return pid->second;
+      return std::distance(hierarchy.begin(),pitr)+1; // need +1 for hepevt format
     };
 
     const bool has_parent = p->get_parent() != nullptr;
@@ -97,8 +64,8 @@ decaygen::hepevt_info decaygen::particle_history::build_hepevt_output_with_trans
     const int first_daughter = has_daughters ? find_pid(p->get_children().front().get()) : 0;
     const int last_daughter = has_daughters ? find_pid(p->get_children().back().get()) : 0;
     
-    const decaygen::vector3& momentum_new = rot * p->production_momentum().vect();
-    const decaygen::vector3& position_new = rot * (p->production_position().vect() + translation.vect());
+    const dkgen::core::vector3& momentum_new = rot * p->production_momentum().vect();
+    const dkgen::core::vector3& position_new = rot * (p->production_position().vect() + translation.vect());
 
     ret.particle_info.push_back({});
     hepevt_particle& part = ret.particle_info.back();
@@ -119,10 +86,10 @@ decaygen::hepevt_info decaygen::particle_history::build_hepevt_output_with_trans
 
 }
 
-std::string decaygen::hepevt_info::build_text() const {
+std::string dkgen::core::hepevt_info::build_text(const char* metadata) const {
   const size_t SIZEOF_BUFFER = 1000;
   char buffer[SIZEOF_BUFFER+1]; // +1 for extra terminating null character
-  std::snprintf(buffer,SIZEOF_BUFFER,"%d %lu %f\n",event_counter,particle_info.size(), total_weight);
+  std::snprintf(buffer,SIZEOF_BUFFER,"%d %lu weight=%g %s\n",event_counter,particle_info.size(), total_weight, metadata);
   std::string ret = buffer;
   for (auto const& p: particle_info) {
     std::snprintf(buffer,SIZEOF_BUFFER,
@@ -136,4 +103,5 @@ std::string decaygen::hepevt_info::build_text() const {
   return ret;
 }
 
-unsigned int decaygen::particle_history::event_counter = 0;
+// initialize static member
+unsigned int dkgen::core::particle_history::event_counter = 0;

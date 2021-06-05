@@ -1,6 +1,6 @@
-#include "driver.hpp"
-#include "particle.hpp"
-#include "decaying_particle_info.hpp"
+#include "dkgen/core/driver.hpp"
+#include "dkgen/core/particle.hpp"
+#include "dkgen/core/decaying_particle_info.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -8,16 +8,16 @@
 
 int main(int argc, char** argv) {
   size_t n_to_gen = 10;
-  for(size_t i = 0; i < argc-1 /* as -n option will have argument */; ++i) {
+  for(int i = 0; i < argc-1 /* as -n option will have argument */; ++i) {
     if(std::string(argv[i]) == "-n") {
       n_to_gen = std::atoll(argv[i+1]);
       i++;
     }
   }
 
-  decaygen::driver driver;
-  const decaygen::rotation rot = [](){
-      decaygen::rotation R;
+  dkgen::core::driver driver;
+  const dkgen::core::rotation rot = [](){
+      dkgen::core::rotation R;
 
       // Rotation matrix using the 0,0,0 position for MicroBooNE (beam to det input) // From NuMI flux note
       R.rotate_axes({  0.92103853804025681562,    0.022713504803924120662,  0.38880857519374290021  }, 
@@ -27,30 +27,30 @@ int main(int argc, char** argv) {
       return R;
       }();
 
-  //decaygen::vector3 vout = rot * decaygen::vector3{0.,0.,1.};
+  //dkgen::core::vector3 vout = rot * dkgen::core::vector3{0.,0.,1.};
   //std::cout << vout.x() << " , "<<vout.y()<<" , "<<vout.z()<<std::endl;
 
-  decaygen::geometry geo({0,1e4,1.e4},{1e3,1e3,1e3});
+  dkgen::core::geometry geo({0,1e4,1.e4},{1e3,1e3,1e3});
   driver.set_geometry(geo);
-  decaygen::config conf;
-  conf.fix_system_of_units(decaygen::config::GeV_cm_ns);
+  dkgen::core::config conf;
+  conf.fix_system_of_units(dkgen::core::config::GeV_cm_ns);
   conf.set_force_decays_in_detector(true);
   driver.set_config(conf);
 
   driver.add_particle_definition(
-      decaygen::particle{1,100.,1e3}
+      dkgen::core::particle{1,100.,1e3}
       .add_decay({1.,{{2,false},{3,false}}})
       .finalise_decay_table()
       );
   
   driver.add_particle_definition(
-      decaygen::particle{2,80.,.4e3}
+      dkgen::core::particle{2,80.,.4e3}
       .add_decay({1.,{{11,true},{-11,true}}})
       .finalise_decay_table()
       );
   
   driver.add_particle_definition(
-      decaygen::particle{3,15.,.2e3}
+      dkgen::core::particle{3,15.,.2e3}
       .add_decay({1.,{{13,true},{-13,true},{11,true}}})
       .finalise_decay_table()
       );
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
         {0.,0.,0.,0.},
         {0.,0.,0.,0.},
         {0.,0.,mom,std::sqrt(100.*100.+mom*mom)},
-        decaygen::decaying_particle_info::non_final
+        dkgen::core::decaying_particle_info::non_final
         },
         [&rng, &gen]()->double{return rng(gen);});
 

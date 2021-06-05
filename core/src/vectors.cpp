@@ -1,10 +1,6 @@
-#include "vectors.hpp"
+#include "dkgen/core/vectors.hpp"
 
-// select one of these to use, undefine the others
-#define USING_CLHEP
-#undef USING_ROOT
-#undef USING_XXXX // dummy template for future expansion, will do nothing at the moment
-
+// need to define USING_CLHEP or USING_ROOT or USING_XXXXX (tbd) on the compile command line
 
 #ifdef USING_CLHEP
 #if defined(USING_ROOT) || defined(USING_XXXX)
@@ -13,9 +9,10 @@
 #include <CLHEP/Vector/ThreeVector.h>
 #include <CLHEP/Vector/LorentzVector.h>
 #include <CLHEP/Vector/Rotation.h>
-#define VECTOR3_CLASS CLHEP::Hep3Vector
-#define VECTOR4_CLASS CLHEP::HepLorentzVector
-#define ROTATION_CLASS CLHEP::HepRotation
+using VECTOR3_CLASS = CLHEP::Hep3Vector;
+using VECTOR4_CLASS = CLHEP::HepLorentzVector;
+using ROTATION_CLASS = CLHEP::HepRotation;
+#define PHYSICS_IS_SET
 #endif
 
 #ifdef USING_ROOT
@@ -25,9 +22,10 @@
 #include <TVector3.h>
 #include <TLorentzVector.h>
 #include <TRotation.h>
-#define VECTOR3_CLASS TVector3
-#define VECTOR4_CLASS TLorentzVector
-#define ROTATION_CLASS TRotation
+using VECTOR3_CLASS = TVector3;
+using VECTOR4_CLASS = TLorentzVector;
+using ROTATION_CLASS = TRotation;
+#define PHYSICS_IS_SET
 #endif
 
 
@@ -36,49 +34,51 @@
 #endif
 
 
-#ifndef VECTOR3_CLASS
+#ifndef PHYSICS_IS_SET
 #error must define exactly one of USING_CLHEP, USING_ROOT, or USING_XXXX
 #endif
 
 
 
-namespace decaygen {
-  struct _vector3_impl_ {
-    VECTOR3_CLASS v;
-  };
-  struct _fourvector_impl_ {
-    VECTOR4_CLASS v;
-  };
-  struct _rotation_impl_ {
-    ROTATION_CLASS r;
-  };
+namespace dkgen {
+  namespace core {
+    struct _vector3_impl_ {
+      VECTOR3_CLASS v;
+    };
+    struct _fourvector_impl_ {
+      VECTOR4_CLASS v;
+    };
+    struct _rotation_impl_ {
+      ROTATION_CLASS r;
+    };
+  }
 }
 
 
-decaygen::vector3::vector3() : impl{std::make_unique<_vector3_impl_>()} {}
+dkgen::core::vector3::vector3() : impl{std::make_unique<_vector3_impl_>()} {}
 
-decaygen::vector3::vector3(double x, double y, double z) : impl{std::make_unique<_vector3_impl_>()} {
+dkgen::core::vector3::vector3(double x, double y, double z) : impl{std::make_unique<_vector3_impl_>()} {
   set_xyz(x,y,z);
 }
 
-decaygen::vector3::~vector3() { }
+dkgen::core::vector3::~vector3() { }
 
-decaygen::vector3::vector3(const decaygen::vector3& v) : impl{std::make_unique<_vector3_impl_>(*(v.impl))} {}
+dkgen::core::vector3::vector3(const vector3& v) : impl{std::make_unique<_vector3_impl_>(*(v.impl))} {}
 
-decaygen::vector3::vector3(decaygen::vector3&& v) : impl{std::move(v.impl)} {
+dkgen::core::vector3::vector3(vector3&& v) : impl{std::move(v.impl)} {
 }
 
-decaygen::vector3& decaygen::vector3::operator=(const decaygen::vector3& v) {
+dkgen::core::vector3& dkgen::core::vector3::operator=(const dkgen::core::vector3& v) {
   impl->v = v.impl->v;
   return *this;
 }
 
-decaygen::vector3& decaygen::vector3::operator=(decaygen::vector3&& v) {
+dkgen::core::vector3& dkgen::core::vector3::operator=(dkgen::core::vector3&& v) {
   impl = std::move(v.impl);
   return *this;
 }
 
-decaygen::vector3 decaygen::vector3::unit() const {
+dkgen::core::vector3 dkgen::core::vector3::unit() const {
   if(mag() <= 0.) {
     throw std::runtime_error("vector3: unit() requested for zero or negative length vector");
   }
@@ -87,17 +87,17 @@ decaygen::vector3 decaygen::vector3::unit() const {
   return ret;
 }
 
-decaygen::vector3 decaygen::vector3::operator*(double a) const {
+dkgen::core::vector3 dkgen::core::vector3::operator*(double a) const {
   vector3 ret(*this);
   ret.set_mag(ret.mag()*a);
   return ret;
 }
 
-decaygen::vector3 operator*(double a, const decaygen::vector3& b) {
+dkgen::core::vector3 operator*(double a, const dkgen::core::vector3& b) {
   return b*a;
 }
 
-double decaygen::vector3::mag() const {
+double dkgen::core::vector3::mag() const {
 #ifdef USING_CLHEP
   return impl->v.mag();
 #elif defined(USING_ROOT)
@@ -105,7 +105,7 @@ double decaygen::vector3::mag() const {
 #endif
 }
 
-decaygen::vector3& decaygen::vector3::set_mag(double m) {
+dkgen::core::vector3& dkgen::core::vector3::set_mag(double m) {
 #ifdef USING_CLHEP
   impl->v.setMag(m);
 #elif defined(USING_ROOT)
@@ -114,7 +114,7 @@ decaygen::vector3& decaygen::vector3::set_mag(double m) {
   return *this;
 }
 
-decaygen::vector3& decaygen::vector3::set_xyz(double x, double y, double z) {
+dkgen::core::vector3& dkgen::core::vector3::set_xyz(double x, double y, double z) {
 #ifdef USING_CLHEP
   impl->v.set(x,y,z);
 #elif defined(USING_ROOT)
@@ -123,7 +123,7 @@ decaygen::vector3& decaygen::vector3::set_xyz(double x, double y, double z) {
   return *this;
 }
 
-double decaygen::vector3::x() const {
+double dkgen::core::vector3::x() const {
 #ifdef USING_CLHEP
   return impl->v.x();
 #elif defined USING_ROOT
@@ -131,7 +131,7 @@ double decaygen::vector3::x() const {
 #endif
 }
 
-double decaygen::vector3::y() const {
+double dkgen::core::vector3::y() const {
 #ifdef USING_CLHEP
   return impl->v.y();
 #elif defined USING_ROOT
@@ -139,7 +139,7 @@ double decaygen::vector3::y() const {
 #endif
 }
 
-double decaygen::vector3::z() const {
+double dkgen::core::vector3::z() const {
 #ifdef USING_CLHEP
   return impl->v.z();
 #elif defined USING_ROOT
@@ -147,13 +147,13 @@ double decaygen::vector3::z() const {
 #endif
 }
 
-decaygen::vector3 decaygen::vector3::operator-(const decaygen::vector3& v2) const {
+dkgen::core::vector3 dkgen::core::vector3::operator-(const dkgen::core::vector3& v2) const {
   vector3 ret(*this);
   ret.impl->v -= v2.impl->v;
   return ret;
 }
 
-decaygen::vector3 decaygen::vector3::operator+(const decaygen::vector3& v2) const {
+dkgen::core::vector3 dkgen::core::vector3::operator+(const dkgen::core::vector3& v2) const {
   vector3 ret(*this);
   ret.impl->v += v2.impl->v;
   return ret;
@@ -168,30 +168,30 @@ decaygen::vector3 decaygen::vector3::operator+(const decaygen::vector3& v2) cons
 
 
 
-decaygen::fourvector::fourvector() : impl{std::make_unique<_fourvector_impl_>()} {}
+dkgen::core::fourvector::fourvector() : impl{std::make_unique<_fourvector_impl_>()} {}
 
-decaygen::fourvector::fourvector(double x, double y, double z, double t) : impl{std::make_unique<_fourvector_impl_>()} {
+dkgen::core::fourvector::fourvector(double x, double y, double z, double t) : impl{std::make_unique<_fourvector_impl_>()} {
   set_xyzt(x,y,z,t);
 }
 
-decaygen::fourvector::~fourvector() { }
+dkgen::core::fourvector::~fourvector() { }
 
-decaygen::fourvector::fourvector(const decaygen::fourvector& v) : impl{std::make_unique<_fourvector_impl_>(*(v.impl))} {}
+dkgen::core::fourvector::fourvector(const dkgen::core::fourvector& v) : impl{std::make_unique<_fourvector_impl_>(*(v.impl))} {}
 
-decaygen::fourvector::fourvector(decaygen::fourvector&& v) : impl{std::move(v.impl)} {
+dkgen::core::fourvector::fourvector(dkgen::core::fourvector&& v) : impl{std::move(v.impl)} {
 }
 
-decaygen::fourvector& decaygen::fourvector::operator=(const decaygen::fourvector& v) {
+dkgen::core::fourvector& dkgen::core::fourvector::operator=(const dkgen::core::fourvector& v) {
   impl->v = v.impl->v;
   return *this;
 }
 
-decaygen::fourvector& decaygen::fourvector::operator=(decaygen::fourvector&& v) {
+dkgen::core::fourvector& dkgen::core::fourvector::operator=(dkgen::core::fourvector&& v) {
   impl = std::move(v.impl);
   return *this;
 }
 
-decaygen::fourvector& decaygen::fourvector::set_xyzt(double x, double y, double z, double t) {
+dkgen::core::fourvector& dkgen::core::fourvector::set_xyzt(double x, double y, double z, double t) {
 #ifdef USING_CLHEP
   impl->v.set(x,y,z,t);
 #elif defined USING_ROOT
@@ -200,7 +200,7 @@ decaygen::fourvector& decaygen::fourvector::set_xyzt(double x, double y, double 
   return *this;
 }
 
-decaygen::fourvector& decaygen::fourvector::set_t(double t) {
+dkgen::core::fourvector& dkgen::core::fourvector::set_t(double t) {
 #ifdef USING_CLHEP
   impl->v.setT(t);
 #elif defined USING_ROOT
@@ -209,7 +209,7 @@ decaygen::fourvector& decaygen::fourvector::set_t(double t) {
   return *this;
 }
 
-double decaygen::fourvector::x() const {
+double dkgen::core::fourvector::x() const {
 #ifdef USING_CLHEP
   return impl->v.x();
 #elif defined USING_ROOT
@@ -217,7 +217,7 @@ double decaygen::fourvector::x() const {
 #endif
 }
 
-double decaygen::fourvector::y() const {
+double dkgen::core::fourvector::y() const {
 #ifdef USING_CLHEP
   return impl->v.y();
 #elif defined USING_ROOT
@@ -225,7 +225,7 @@ double decaygen::fourvector::y() const {
 #endif
 }
 
-double decaygen::fourvector::z() const {
+double dkgen::core::fourvector::z() const {
 #ifdef USING_CLHEP
   return impl->v.z();
 #elif defined USING_ROOT
@@ -233,7 +233,7 @@ double decaygen::fourvector::z() const {
 #endif
 }
 
-double decaygen::fourvector::t() const {
+double dkgen::core::fourvector::t() const {
 #ifdef USING_CLHEP
   return impl->v.t();
 #elif defined USING_ROOT
@@ -241,7 +241,7 @@ double decaygen::fourvector::t() const {
 #endif
 }
 
-double decaygen::fourvector::px() const {
+double dkgen::core::fourvector::px() const {
 #ifdef USING_CLHEP
   return impl->v.px();
 #elif defined USING_ROOT
@@ -249,7 +249,7 @@ double decaygen::fourvector::px() const {
 #endif
 }
 
-double decaygen::fourvector::py() const {
+double dkgen::core::fourvector::py() const {
 #ifdef USING_CLHEP
   return impl->v.py();
 #elif defined USING_ROOT
@@ -257,7 +257,7 @@ double decaygen::fourvector::py() const {
 #endif
 }
 
-double decaygen::fourvector::pz() const {
+double dkgen::core::fourvector::pz() const {
 #ifdef USING_CLHEP
   return impl->v.pz();
 #elif defined USING_ROOT
@@ -265,7 +265,7 @@ double decaygen::fourvector::pz() const {
 #endif
 }
 
-double decaygen::fourvector::e() const {
+double dkgen::core::fourvector::e() const {
 #ifdef USING_CLHEP
   return impl->v.e();
 #elif defined USING_ROOT
@@ -273,7 +273,7 @@ double decaygen::fourvector::e() const {
 #endif
 }
 
-decaygen::fourvector& decaygen::fourvector::set_mass_momentum_theta_phi(double m, double mom, double t, double p) {
+dkgen::core::fourvector& dkgen::core::fourvector::set_mass_momentum_theta_phi(double m, double mom, double t, double p) {
 #ifdef USING_CLHEP
   impl->v.setVectM({mom*std::sin(t)*std::cos(p), mom*std::sin(t)*std::sin(p), mom*std::cos(t)},m);
 #elif defined USING_ROOT
@@ -282,7 +282,7 @@ decaygen::fourvector& decaygen::fourvector::set_mass_momentum_theta_phi(double m
   return *this;
 }
 
-double decaygen::fourvector::m() const {
+double dkgen::core::fourvector::m() const {
 #ifdef USING_CLHEP
   return impl->v.m();
 #elif defined USING_ROOT
@@ -290,7 +290,7 @@ double decaygen::fourvector::m() const {
 #endif
 }
 
-double decaygen::fourvector::m2() const {
+double dkgen::core::fourvector::m2() const {
 #ifdef USING_CLHEP
   return impl->v.m2();
 #elif defined USING_ROOT
@@ -298,7 +298,7 @@ double decaygen::fourvector::m2() const {
 #endif
 }
 
-decaygen::vector3 decaygen::fourvector::vect() const {
+dkgen::core::vector3 dkgen::core::fourvector::vect() const {
   vector3 ret;
 #ifdef USING_CLHEP
   ret.impl->v = impl->v.vect();
@@ -308,7 +308,7 @@ decaygen::vector3 decaygen::fourvector::vect() const {
   return ret;
 }
 
-decaygen::fourvector& decaygen::fourvector::set_vec_time(const decaygen::vector3& vec, double time)  {
+dkgen::core::fourvector& dkgen::core::fourvector::set_vec_time(const dkgen::core::vector3& vec, double time)  {
 #ifdef USING_CLHEP
   impl->v.setVect(vec.impl->v);
   impl->v.setT(time);
@@ -320,7 +320,7 @@ decaygen::fourvector& decaygen::fourvector::set_vec_time(const decaygen::vector3
 }
 
 
-decaygen::vector3 decaygen::fourvector::get_boost_vector() const {
+dkgen::core::vector3 dkgen::core::fourvector::get_boost_vector() const {
   vector3 ret;
 #ifdef USING_CLHEP
   ret.impl->v = impl->v.boostVector();
@@ -330,7 +330,7 @@ decaygen::vector3 decaygen::fourvector::get_boost_vector() const {
   return ret;
 }
 
-decaygen::fourvector& decaygen::fourvector::boost(const decaygen::vector3& bv) {
+dkgen::core::fourvector& dkgen::core::fourvector::boost(const dkgen::core::vector3& bv) {
 #ifdef USING_CLHEP
   impl->v.boost(bv.impl->v);
 #elif defined USING_ROOT
@@ -339,7 +339,7 @@ decaygen::fourvector& decaygen::fourvector::boost(const decaygen::vector3& bv) {
   return *this;
 }
 
-double decaygen::fourvector::beta() const {
+double dkgen::core::fourvector::beta() const {
 #ifdef USING_CLHEP
   return impl->v.beta();
 #elif defined USING_ROOT
@@ -348,13 +348,13 @@ double decaygen::fourvector::beta() const {
 }
 
 
-decaygen::fourvector decaygen::fourvector::operator-(const decaygen::fourvector& v2) const {
+dkgen::core::fourvector dkgen::core::fourvector::operator-(const dkgen::core::fourvector& v2) const {
   fourvector ret(*this);
   ret.impl->v -= v2.impl->v;
   return ret;
 }
 
-decaygen::fourvector decaygen::fourvector::operator+(const decaygen::fourvector& v2) const {
+dkgen::core::fourvector dkgen::core::fourvector::operator+(const dkgen::core::fourvector& v2) const {
   fourvector ret(*this);
   ret.impl->v += v2.impl->v;
   return ret;
@@ -370,32 +370,32 @@ decaygen::fourvector decaygen::fourvector::operator+(const decaygen::fourvector&
 
 
 
-decaygen::rotation::rotation() : impl{std::make_unique<_rotation_impl_>()} {}
+dkgen::core::rotation::rotation() : impl{std::make_unique<_rotation_impl_>()} {}
 
-decaygen::rotation::~rotation() { }
+dkgen::core::rotation::~rotation() { }
 
-decaygen::rotation::rotation(const decaygen::rotation& r) : impl{std::make_unique<_rotation_impl_>(*(r.impl))} {}
+dkgen::core::rotation::rotation(const dkgen::core::rotation& r) : impl{std::make_unique<_rotation_impl_>(*(r.impl))} {}
 
-decaygen::rotation::rotation(decaygen::rotation&& r) : impl{std::move(r.impl)} {
+dkgen::core::rotation::rotation(dkgen::core::rotation&& r) : impl{std::move(r.impl)} {
 }
 
-decaygen::rotation& decaygen::rotation::operator=(const decaygen::rotation& r) {
+dkgen::core::rotation& dkgen::core::rotation::operator=(const dkgen::core::rotation& r) {
   impl->r = r.impl->r;
   return *this;
 }
 
-decaygen::rotation& decaygen::rotation::operator=(decaygen::rotation&& r) {
+dkgen::core::rotation& dkgen::core::rotation::operator=(dkgen::core::rotation&& r) {
   impl = std::move(r.impl);
   return *this;
 }
 
-decaygen::vector3 decaygen::rotation::operator*(const decaygen::vector3& vin) const {
-  decaygen::vector3 ret;
+dkgen::core::vector3 dkgen::core::rotation::operator*(const dkgen::core::vector3& vin) const {
+  dkgen::core::vector3 ret;
   ret.impl->v = impl->r * vin.impl->v;
   return ret;
 }
 
-decaygen::rotation& decaygen::rotation::invert() { 
+dkgen::core::rotation& dkgen::core::rotation::invert() { 
 #ifdef USING_CLHEP
   impl->r.invert();
 #elif defined USING_ROOT
@@ -404,7 +404,7 @@ decaygen::rotation& decaygen::rotation::invert() {
   return *this;
 }
 
-decaygen::rotation decaygen::rotation::get_inverse()  const { 
+dkgen::core::rotation dkgen::core::rotation::get_inverse()  const { 
   rotation ret;
 #ifdef USING_CLHEP
   ret.impl->r = impl->r.inverse();
@@ -414,7 +414,7 @@ decaygen::rotation decaygen::rotation::get_inverse()  const {
   return ret;
 }
 
-decaygen::rotation& decaygen::rotation::rotate_axes(const decaygen::vector3& new_x, const decaygen::vector3& new_y, const decaygen::vector3& new_z) {
+dkgen::core::rotation& dkgen::core::rotation::rotate_axes(const dkgen::core::vector3& new_x, const dkgen::core::vector3& new_y, const dkgen::core::vector3& new_z) {
 #ifdef USING_CLHEP
   impl->r.rotateAxes(new_x.impl->v, new_y.impl->v, new_z.impl->v);
 #elif defined USING_ROOT

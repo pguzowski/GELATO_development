@@ -1,8 +1,8 @@
-#include "particle.hpp"
+#include "dkgen/core/particle.hpp"
 
 #include <algorithm>
 
-decaygen::decay_mode::decay_mode(double br, daughter_vector_t dgt, dalitz_function rw) :
+dkgen::core::decay_mode::decay_mode(double br, daughter_vector_t dgt, dalitz_function rw) :
   branching_ratio{br},
   daughters{std::move(dgt)},
   threebody_dalitz_reweighter{std::move(rw)}/*,
@@ -10,11 +10,11 @@ decaygen::decay_mode::decay_mode(double br, daughter_vector_t dgt, dalitz_functi
 {
 }
 
-bool decaygen::decay_mode::is_pure_final_state() const {
+bool dkgen::core::decay_mode::is_pure_final_state() const {
   return std::all_of(daughters.begin(), daughters.end(),[](auto p){return p.second;});
 }
 
-decaygen::particle::particle(int pdgc, double m, double lt) :
+dkgen::core::particle::particle(int pdgc, double m, double lt) :
   pdg_code{pdgc},
   m{m},
   ltime{lt}
@@ -24,7 +24,7 @@ decaygen::particle::particle(int pdgc, double m, double lt) :
   }
 }
       
-decaygen::particle& decaygen::particle::add_decay(const decaygen::decay_mode& dm) {
+dkgen::core::particle& dkgen::core::particle::add_decay(const dkgen::core::decay_mode& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }
@@ -34,7 +34,7 @@ decaygen::particle& decaygen::particle::add_decay(const decaygen::decay_mode& dm
   decay_table.push_back(dm);
   return *this;
 }
-decaygen::particle& decaygen::particle::add_decay(decaygen::decay_mode&& dm) {
+dkgen::core::particle& dkgen::core::particle::add_decay(dkgen::core::decay_mode&& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }
@@ -45,7 +45,7 @@ decaygen::particle& decaygen::particle::add_decay(decaygen::decay_mode&& dm) {
   return *this;
 }
 
-decaygen::particle& decaygen::particle::finalise_decay_table() {
+dkgen::core::particle& dkgen::core::particle::finalise_decay_table() {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }
@@ -61,7 +61,8 @@ decaygen::particle& decaygen::particle::finalise_decay_table() {
   return *this;
 }
 
-const decaygen::decay_mode& decaygen::particle::generate_decay_mode(random_uniform_0_1_generator rng) const {
+const dkgen::core::decay_mode& dkgen::core::particle::generate_decay_mode(random_uniform_0_1_generator rng) const {
+  if(decay_table.empty()) return null_decay;
   if(sum_branching_ratios.empty()) {
     throw std::runtime_error("Decay table has not been finalised");
   }
@@ -82,7 +83,12 @@ const decaygen::decay_mode& decaygen::particle::generate_decay_mode(random_unifo
 
 
 
-const decaygen::decay_mode& decaygen::particle::generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const {
+const dkgen::core::decay_mode&
+dkgen::core::particle::generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const {
+  if(decay_table.empty()) {
+    weight = 1.;
+    return null_decay;
+  }
   if(sum_branching_ratios.empty()) {
     throw std::runtime_error("Decay table has not been finalised");
   }
@@ -102,4 +108,4 @@ const decaygen::decay_mode& decaygen::particle::generate_weighted_decay_mode(ran
   return decay_table.back();
 }
 
-decaygen::decay_mode decaygen::particle::null_decay{};
+dkgen::core::decay_mode dkgen::core::particle::null_decay{};

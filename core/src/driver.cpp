@@ -1,12 +1,12 @@
-#include "driver.hpp"
+#include "dkgen/core/driver.hpp"
 
 #include <queue>
 #include <memory>
 #include <cmath>
 #include <numeric>
 
-#include "decaying_particle_info.hpp"
-#include "particle.hpp"
+#include "dkgen/core/decaying_particle_info.hpp"
+#include "dkgen/core/particle.hpp"
 
 
 #define DEBUG
@@ -15,18 +15,16 @@
 #include <iostream>
 #endif
 
-decaygen::driver::driver() {
+dkgen::core::driver::driver() {
 }
 
-decaygen::driver::~driver() {
+dkgen::core::driver::~driver() {
 }
 
-decaygen::particle_history decaygen::driver::generate_decays(
-    decaygen::decaying_particle_info&& parent_meson,
-    decaygen::random_uniform_0_1_generator rng
+dkgen::core::particle_history dkgen::core::driver::generate_decays(
+    dkgen::core::decaying_particle_info&& parent_meson,
+    dkgen::core::random_uniform_0_1_generator rng
     ) const {
-  // no need to check this every time
-  static const double speed_of_light = config.physical_params().speed_of_light;
 
   particle_history ret;
 
@@ -53,11 +51,11 @@ decaygen::particle_history decaygen::driver::generate_decays(
   while(!queue_to_decay.empty()) {
     auto decpar = queue_to_decay.front();
     queue_to_decay.pop();
-    
+
     if(decpar->is_final_state()) continue;
 
-    const particle& p = find_particle(decpar->pdg());
-    auto const& dm = p.generate_decay_mode(rng);
+    const particle& parent_particle_info = find_particle(decpar->pdg());
+    auto const& dm = parent_particle_info.generate_decay_mode(rng);
     if(dm.is_null()) continue;
 
     if(config.force_decays_inside_detector() && dm.is_pure_final_state()) {
@@ -76,34 +74,38 @@ decaygen::particle_history decaygen::driver::generate_decays(
     auto twobody_decay_momentum_in_com_frame = [](double parent_mass, double m1, double m2) -> double {
       return std::sqrt((parent_mass+m1+m2)*(parent_mass-m1-m2)*(parent_mass+m1-m2)*(parent_mass-m1+m2))/(2.*parent_mass);
     };
-    
+
+    // need to flip signs of daughters if parent decay was antiparticle
+    const int sign_flip = (decpar->pdg() != std::abs(decpar->pdg())) ? -1 : 1;
+
     if(dm.daughters.size() == 2) {
-      auto const& d1 = find_particle(std::abs(dm.daughters[0].first));
-      auto const& d2 = find_particle(std::abs(dm.daughters[1].first));
+      auto const& d1 = find_particle(dm.daughters[0].first);
+      auto const& d2 = find_particle(dm.daughters[1].first);
       const double m1 = d1.mass();
       const double m2 = d2.mass();
       const double cos_theta_cm = 1.-2.*rng();
       const double phi_cm = 2*M_PI*rng();
-      const double decay_momentum = twobody_decay_momentum_in_com_frame(p.mass(), m1, m2);
+      const double decay_momentum = twobody_decay_momentum_in_com_frame(parent_particle_info.mass(), m1, m2);
       fourvector p1, p2;
       p1.set_mass_momentum_theta_phi(m1,decay_momentum,std::acos(cos_theta_cm),phi_cm);
       p2.set_mass_momentum_theta_phi(m2,-decay_momentum,std::acos(cos_theta_cm),phi_cm);
       p1.boost(decpar->decay_momentum().get_boost_vector());
       p2.boost(decpar->decay_momentum().get_boost_vector());
 
-      daughters.push_back({dm.daughters[0].first, p1, dm.daughters[0].second});
-      daughters.push_back({dm.daughters[1].first, p2, dm.daughters[1].second});
+      daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
+      daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});
 
     }
     else if(dm.daughters.size() == 3) {
-      auto const& d1 = find_particle(std::abs(dm.daughters[0].first));
-      auto const& d2 = find_particle(std::abs(dm.daughters[1].first));
-      auto const& d3 = find_particle(std::abs(dm.daughters[2].first));
-      
+      auto const& d1 = find_particle(dm.daughters[0].first);
+      auto const& d2 = find_particle(dm.daughters[1].first);
+      auto const& d3 = find_particle(dm.daughters[2].first);
+
       const double m1 = d1.mass();
       const double m2 = d2.mass();
       const double m3 = d3.mass();
-      const double tcm = p.mass()-m1-m2-m3;
+      const double M  = parent_particle_info.mass();
+      const double tcm = M - m1 - m2 - m3;
 
       // actually larger than the max weight
       const double decay_max_weight =
@@ -114,22 +116,22 @@ decaygen::particle_history decaygen::driver::generate_decays(
       while(true) {
         const double three_body_split = rng();
         const double m23 = m2 + m3 + three_body_split * tcm;
-        
-        const double decay_1_momentum = twobody_decay_momentum_in_com_frame(p.mass(),m23,m1);
-        const double decay_23_momentum = twobody_decay_momentum_in_com_frame(m23,m2,m3);
-        
+
+        const double decay_1_momentum = twobody_decay_momentum_in_com_frame(M, m23, m1);
+        const double decay_23_momentum = twobody_decay_momentum_in_com_frame(m23, m2, m3);
+
         const double decay_weight = decay_1_momentum*decay_23_momentum;
-        
+
         if(decay_weight < rng() * decay_max_weight) {
           continue; // while(true)
         }
-        
+
         const double cos_theta_cm = 1.-2.*rng();
         const double phi_cm = 2*M_PI*rng();
         const double cos_theta_23 = 1.-2.*rng();
         const double phi_23 = 2*M_PI*rng();
 
-        
+
         p1.set_mass_momentum_theta_phi(d1.mass(),decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
         const fourvector p23 = fourvector{}.set_mass_momentum_theta_phi(m23,-decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
 
@@ -151,25 +153,25 @@ decaygen::particle_history decaygen::driver::generate_decays(
       p2.boost(decpar->decay_momentum().get_boost_vector());
       p3.boost(decpar->decay_momentum().get_boost_vector());
 
-      daughters.push_back({dm.daughters[0].first, p1, dm.daughters[0].second});
-      daughters.push_back({dm.daughters[1].first, p2, dm.daughters[1].second});
-      daughters.push_back({dm.daughters[2].first, p3, dm.daughters[2].second});
+      daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
+      daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});
+      daughters.push_back({sign_flip * dm.daughters[2].first, p3, dm.daughters[2].second});
 
     }
     else {
       throw std::runtime_error("4+ body decays are not implemented");
     }
 
-    
+
     for(auto& d : daughters) {
       const int pdg = d.pdg;
       const fourvector& momentum = d.momentum;
       const bool is_final_state = d.final_state;
       decpar->add_child(std::make_unique<decaying_particle_info>(
-          decpar, pdg, 
-          decpar->decay_position(), momentum,
-          is_final_state ? decaying_particle_info::final_state : decaying_particle_info::non_final
-          ));
+            decpar, pdg, 
+            decpar->decay_position(), momentum,
+            is_final_state ? decaying_particle_info::final_state : decaying_particle_info::non_final
+            ));
       queue_to_decay.push(decpar->get_children().back().get());
     }
 
@@ -185,7 +187,7 @@ decaygen::particle_history decaygen::driver::generate_decays(
   }
 
 #ifdef DEBUG
-      std::cout << "\n\n";
+  std::cout << "\n\n";
 #endif
   // stage 3: generate decay positions
   const bool has_activity_inside_detector = generate_decay_position(top_parent.get(),
@@ -198,33 +200,33 @@ decaygen::particle_history decaygen::driver::generate_decays(
   return ret;
 }
 
-decaygen::driver& decaygen::driver::add_particle_definition(const decaygen::particle& p) {
+dkgen::core::driver& dkgen::core::driver::add_particle_definition(const dkgen::core::particle& p) {
   particle_content[std::abs(p.pdg())] = p;
   return *this;
 }
 
-decaygen::driver& decaygen::driver::set_geometry(const decaygen::geometry& geom) {
+dkgen::core::driver& dkgen::core::driver::set_geometry(const dkgen::core::geometry& geom) {
   geo = geom;
   return *this;
 }
 
 
-decaygen::driver& decaygen::driver::set_particle_content(const std::map<abs_particle_pdg, particle>& p) {
+dkgen::core::driver& dkgen::core::driver::set_particle_content(const std::map<abs_particle_pdg, particle>& p) {
   particle_content = p;
   return *this;
 }
-decaygen::driver& decaygen::driver::set_particle_content(std::map<abs_particle_pdg, particle>&& p) {
+dkgen::core::driver& dkgen::core::driver::set_particle_content(std::map<abs_particle_pdg, particle>&& p) {
   particle_content = std::move(p);
   return *this;
 }
 
-bool decaygen::driver::generate_decay_position(decaying_particle_info_ptr parent,
+bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr parent,
     const decaying_particle_info_ptr forced_decay,
     random_uniform_0_1_generator rng) const {
   if(!parent->is_decay_set() && !parent->is_final_state()) {
 
     const particle& p = find_particle(parent->pdg());
-    
+
     bool decay_set = false;
     if(forced_decay == parent) {
       // we have to force the decay position to be inside the detector, if possible
@@ -273,12 +275,12 @@ bool decaygen::driver::generate_decay_position(decaying_particle_info_ptr parent
 
   return std::accumulate(parent->get_children().begin(), parent->get_children().end(), is_inside_detector,
       [this,forced_decay,rng](bool previous_result, const decaying_particle_info::child_t& current_daughter) -> bool {
-        return previous_result | generate_decay_position(current_daughter.get(),forced_decay,rng);
+      return previous_result | generate_decay_position(current_daughter.get(),forced_decay,rng);
       }
-    );
+      );
 }
 
-const decaygen::particle& decaygen::driver::find_particle(int pdg) const {
+const dkgen::core::particle& dkgen::core::driver::find_particle(int pdg) const {
   auto p = particle_content.find(std::abs(pdg));
   if (p == particle_content.end()) {
     throw std::runtime_error("Undefined particle requested! PDG code "+std::to_string(pdg));
@@ -287,7 +289,7 @@ const decaygen::particle& decaygen::driver::find_particle(int pdg) const {
 };
 
 
-decaygen::driver& decaygen::driver::set_config(const decaygen::config& conf) {
+dkgen::core::driver& dkgen::core::driver::set_config(const dkgen::core::config& conf) {
   if(conf.physical_params().speed_of_light < 0.) {
     throw std::runtime_error("config: system of units has not been fixed yet");
   }
