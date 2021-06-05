@@ -11,19 +11,23 @@
 namespace dkgen {
   namespace core {
     class decaying_particle_info;
-    class particle;
+    class particle_definition;
     class driver {
       public:
         using abs_particle_pdg = unsigned int;
-        using particle_map = std::map<abs_particle_pdg, particle>;
+        using particle_map = std::map<abs_particle_pdg, particle_definition>;
         driver();
         ~driver();
-        particle_history generate_decays(decaying_particle_info&& parent_meson, random_uniform_0_1_generator rng) const;
-        driver& add_particle_definition(const particle& p);
+        
+        driver& add_particle_definition(const particle_definition& p);
         driver& set_particle_content(const particle_map& p);
         driver& set_particle_content(particle_map&& p);
         driver& set_geometry(const geometry& geom);
         driver& set_config(const config& conf);
+        
+        // main event loop: generate decay of initial particle
+        particle_history generate_decays(decaying_particle_info&& initial_decay, random_uniform_0_1_generator rng) const;
+        
       private:
         using decaying_particle_info_ptr = decaying_particle_info*;
         
@@ -31,14 +35,24 @@ namespace dkgen {
         geometry geo;
         config config;
 
-        // returns true if particle or any of its daughters decays inside detector
-        // forced_decay: decaying particle that is forced to decay inside detector (could be nullptr)
+        // recursively generate decay positions, forcing some into the detector if
+        // possible and "force_decays_inside_detector" config flag is on
+        // returns true if any final state particles are produced inside detector
+        bool generate_decay_position(decaying_particle_info_ptr parent,
+            random_uniform_0_1_generator rng) const;
+        /*
         bool generate_decay_position(decaying_particle_info_ptr parent,
             const decaying_particle_info_ptr forced_decay,
             random_uniform_0_1_generator rng) const;
+        */
 
-        const particle& find_particle(int pdg) const;
+        const particle_definition& find_particle(int pdg) const;
 
+        // recursively generates daughters from decay tables, and momenta
+        // doesn't do positions (use generate_decay_position(...) for that)
+        // returns vector of pre-final-state decays 
+        // if "force_decays_inside_detector" config flag is on
+        std::vector<decaying_particle_info_ptr> generate_decay_tree(decaying_particle_info_ptr parent);
     };
   }
 }

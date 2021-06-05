@@ -1,6 +1,12 @@
+set(PHYSICS_BACKEND "CLHEP" CACHE STRING "Choice of physics backend library, can be CLHEP or ROOT for now. CLHEP is faster than ROOT in benchmarks")
 
-# cache variables
-find_package(CLHEP REQUIRED)
+if(PHYSICS_BACKEND STREQUAL "CLHEP")
+  find_package(CLHEP REQUIRED)
+elseif(PHYSICS_BACKEND STREQUAL "ROOT")
+  find_package(ROOT REQUIRED)
+else()
+  message(FATAL_ERROR "PHYSICS_BACKEND variable must be either ROOT or CLHEP")
+endif()
 
 
 # test for <experimental/propagate_const> (C++ TS2 standard, not available in all compilers)
@@ -29,6 +35,12 @@ add_library(dkgen SHARED
   "src/vectors.cpp"
   )
 target_compile_features(dkgen PUBLIC cxx_std_14)
-target_compile_definitions(dkgen PRIVATE USING_CLHEP)
-target_link_libraries(dkgen PRIVATE CLHEP::Vector)
-target_include_directories(dkgen PUBLIC include PRIVATE ${CLHEP_INCLUDE_DIRS})
+if(PHYSICS_BACKEND STREQUAL "CLHEP")
+  target_compile_definitions(dkgen PRIVATE USING_CLHEP)
+  target_link_libraries(dkgen PRIVATE CLHEP::Vector)
+  target_include_directories(dkgen PUBLIC include PRIVATE ${CLHEP_INCLUDE_DIRS})
+elseif(PHYSICS_BACKEND STREQUAL "ROOT")
+  target_compile_definitions(dkgen PRIVATE USING_ROOT)
+  target_link_libraries(dkgen PRIVATE ROOT::Physics)
+  target_include_directories(dkgen PUBLIC include PRIVATE ${ROOT_INCLUDE_DIRS})
+endif()

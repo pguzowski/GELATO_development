@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <string>
-//#include <map>
 #include <vector>
 
 #include "dkgen/core/vectors.hpp"
@@ -52,7 +51,6 @@ namespace dkgen {
         
         std::unique_ptr<decaying_particle_info> parent; // need to keep ownership so that hierarchy remains valid
         std::vector<decaying_particle_info_ptr> hierarchy;
-        //std::map<decaying_particle_info_ptr,size_t> particles_to_particle_ids;
         double total_weight;
         static unsigned int event_counter;
     };

@@ -88,29 +88,29 @@ namespace dkgen {
       bool is_null() const { return branching_ratio < 0.; }
     };
 
-    class particle {
+    class particle_definition {
       public:
-        particle(int pdgc, double m, double lt = -1.); // negative lifetime for stable or final state particles
-        particle() = default;
+        particle_definition(int pdgc, double m, double lt = -1.); // negative lifetime for stable or final state particles
+        particle_definition() = default;
 
-        particle(const particle&) = default;
-        particle& operator=(const particle&) = default;
-        particle(particle&&) = default;
-        particle& operator=(particle&&) = default;
-        ~particle() = default;
+        particle_definition(const particle_definition&) = default;
+        particle_definition& operator=(const particle_definition&) = default;
+        particle_definition(particle_definition&&) = default;
+        particle_definition& operator=(particle_definition&&) = default;
+        ~particle_definition() = default;
 
         int pdg() const { return pdg_code; };
         double mass() const { return m; };
         double lifetime() const { return ltime; };
 
-        particle& add_decay(const decay_mode& dm);
-        particle& add_decay(decay_mode&& dm);
+        particle_definition& add_decay(const decay_mode& dm);
+        particle_definition& add_decay(decay_mode&& dm);
 
         const decay_mode& generate_decay_mode(random_uniform_0_1_generator rng) const;
         const decay_mode& generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const;
 
         // sums up branching ratios
-        particle& finalise_decay_table(); 
+        particle_definition& finalise_decay_table(); 
       private:
         int pdg_code;
         double m;

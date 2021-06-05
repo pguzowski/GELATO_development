@@ -20,7 +20,7 @@ namespace dkgen {
         typedef enum { non_final, pre_final_state, final_state } state_type;
 
         decaying_particle_info();
-        // Parent should be nullptr or ptr to parent (never new/delete)
+        // Parent should be nullptr or ptr to parent 
         decaying_particle_info(decaying_particle_info* parent, int pdg, fourvector prod_pos,
             fourvector prod_mom, state_type state);
         // constructor for initial parent particle
@@ -52,10 +52,6 @@ namespace dkgen {
         const child_vector_t& get_children() const { return children; }
 
         decaying_particle_info& add_child(child_t&& child) { children.push_back(std::move(child)); return *this; }
-        // Release all children. Making this public allows to destroy children
-        // backwards through hierarchy to avoid stack overflows in recursion
-        // if there are too many layers of children
-        void destroy_all_children() { children.clear(); }
 
         bool is_final_state() const { return state == final_state; }
         // all daughters are final states
@@ -68,8 +64,8 @@ namespace dkgen {
         size_t get_number_of_particles_in_hierarchy() const;
       private:
         int pdg_code;
-        decaying_particle_info_ptr parent; // not owned by this object. deleting this has no effect on parent
-        child_vector_t children; // owned by this object. deleting this deletes all children
+        decaying_particle_info_ptr parent; // not owned by this object. deleting "this" has no effect on parent
+        child_vector_t children; // owned by this object. deleting "this" deletes all children
         fourvector prod_pos;
         fourvector dec_pos;
         fourvector momentum;

@@ -9,8 +9,6 @@
 #include "dkgen/core/particle.hpp"
 
 
-#define DEBUG
-#undef DEBUG
 #ifdef DEBUG
 #include <iostream>
 #endif
@@ -54,7 +52,7 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
 
     if(decpar->is_final_state()) continue;
 
-    const particle& parent_particle_info = find_particle(decpar->pdg());
+    const particle_definition& parent_particle_info = find_particle(decpar->pdg());
     auto const& dm = parent_particle_info.generate_decay_mode(rng);
     if(dm.is_null()) continue;
 
@@ -177,12 +175,16 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
 
   }
 
-  // stage (1|2).5: choose random pure final state
+
+  // stage (1|2).5: choose random pure final state to force that decay into
+  // the detector (if option has been enabled; otherwise pure_final_states is empty) 
   if(pure_final_states.size() > 1) {
-    size_t choice = static_cast<size_t>(pure_final_states.size() * rng());
-    pure_final_states.erase(std::next(pure_final_states.begin(),choice));
-    for(auto& decpar : pure_final_states) {
-      decpar->unset_pre_final_state();
+    const size_t choice = static_cast<size_t>(pure_final_states.size() * rng());
+    auto const& keep_this_one = *std::next(pure_final_states.begin(),choice);
+    for(auto const& decpar : pure_final_states) {
+      if(decpar != keep_this_one) {
+        decpar->unset_pre_final_state();
+      }
     }
   }
 
@@ -190,8 +192,7 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
   std::cout << "\n\n";
 #endif
   // stage 3: generate decay positions
-  const bool has_activity_inside_detector = generate_decay_position(top_parent.get(),
-      pure_final_states.size() > 0 ? pure_final_states.front() : nullptr, rng);
+  const bool has_activity_inside_detector = generate_decay_position(top_parent.get(), rng);
 
   if(has_activity_inside_detector) {
     ret.build_hierarchy(std::move(top_parent));
@@ -200,7 +201,7 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
   return ret;
 }
 
-dkgen::core::driver& dkgen::core::driver::add_particle_definition(const dkgen::core::particle& p) {
+dkgen::core::driver& dkgen::core::driver::add_particle_definition(const dkgen::core::particle_definition& p) {
   particle_content[std::abs(p.pdg())] = p;
   return *this;
 }
@@ -211,24 +212,24 @@ dkgen::core::driver& dkgen::core::driver::set_geometry(const dkgen::core::geomet
 }
 
 
-dkgen::core::driver& dkgen::core::driver::set_particle_content(const std::map<abs_particle_pdg, particle>& p) {
+dkgen::core::driver& dkgen::core::driver::set_particle_content(const particle_map& p) {
   particle_content = p;
   return *this;
 }
-dkgen::core::driver& dkgen::core::driver::set_particle_content(std::map<abs_particle_pdg, particle>&& p) {
+dkgen::core::driver& dkgen::core::driver::set_particle_content(particle_map&& p) {
   particle_content = std::move(p);
   return *this;
 }
 
+
 bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr parent,
-    const decaying_particle_info_ptr forced_decay,
     random_uniform_0_1_generator rng) const {
   if(!parent->is_decay_set() && !parent->is_final_state()) {
 
-    const particle& p = find_particle(parent->pdg());
+    const particle_definition& p = find_particle(parent->pdg());
 
     bool decay_set = false;
-    if(forced_decay == parent) {
+    if(parent->is_pre_final_state()) {
       // we have to force the decay position to be inside the detector, if possible
 
       const vector3& direction = parent->production_momentum().vect().unit();
@@ -274,13 +275,13 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
     && geo.is_beamline_vector_in_active_volume(parent->decay_position().vect());
 
   return std::accumulate(parent->get_children().begin(), parent->get_children().end(), is_inside_detector,
-      [this,forced_decay,rng](bool previous_result, const decaying_particle_info::child_t& current_daughter) -> bool {
-      return previous_result | generate_decay_position(current_daughter.get(),forced_decay,rng);
+      [this,rng](bool previous_result, const decaying_particle_info::child_t& current_daughter) -> bool {
+      return previous_result | generate_decay_position(current_daughter.get(),rng);
       }
       );
 }
 
-const dkgen::core::particle& dkgen::core::driver::find_particle(int pdg) const {
+const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int pdg) const {
   auto p = particle_content.find(std::abs(pdg));
   if (p == particle_content.end()) {
     throw std::runtime_error("Undefined particle requested! PDG code "+std::to_string(pdg));

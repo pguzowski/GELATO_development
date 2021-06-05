@@ -14,7 +14,7 @@ bool dkgen::core::decay_mode::is_pure_final_state() const {
   return std::all_of(daughters.begin(), daughters.end(),[](auto p){return p.second;});
 }
 
-dkgen::core::particle::particle(int pdgc, double m, double lt) :
+dkgen::core::particle_definition::particle_definition(int pdgc, double m, double lt) :
   pdg_code{pdgc},
   m{m},
   ltime{lt}
@@ -24,7 +24,7 @@ dkgen::core::particle::particle(int pdgc, double m, double lt) :
   }
 }
       
-dkgen::core::particle& dkgen::core::particle::add_decay(const dkgen::core::decay_mode& dm) {
+dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(const dkgen::core::decay_mode& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }
@@ -34,7 +34,7 @@ dkgen::core::particle& dkgen::core::particle::add_decay(const dkgen::core::decay
   decay_table.push_back(dm);
   return *this;
 }
-dkgen::core::particle& dkgen::core::particle::add_decay(dkgen::core::decay_mode&& dm) {
+dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(dkgen::core::decay_mode&& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }
@@ -45,7 +45,7 @@ dkgen::core::particle& dkgen::core::particle::add_decay(dkgen::core::decay_mode&
   return *this;
 }
 
-dkgen::core::particle& dkgen::core::particle::finalise_decay_table() {
+dkgen::core::particle_definition& dkgen::core::particle_definition::finalise_decay_table() {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }
@@ -61,7 +61,7 @@ dkgen::core::particle& dkgen::core::particle::finalise_decay_table() {
   return *this;
 }
 
-const dkgen::core::decay_mode& dkgen::core::particle::generate_decay_mode(random_uniform_0_1_generator rng) const {
+const dkgen::core::decay_mode& dkgen::core::particle_definition::generate_decay_mode(random_uniform_0_1_generator rng) const {
   if(decay_table.empty()) return null_decay;
   if(sum_branching_ratios.empty()) {
     throw std::runtime_error("Decay table has not been finalised");
@@ -84,7 +84,7 @@ const dkgen::core::decay_mode& dkgen::core::particle::generate_decay_mode(random
 
 
 const dkgen::core::decay_mode&
-dkgen::core::particle::generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const {
+dkgen::core::particle_definition::generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const {
   if(decay_table.empty()) {
     weight = 1.;
     return null_decay;
@@ -108,4 +108,4 @@ dkgen::core::particle::generate_weighted_decay_mode(random_uniform_0_1_generator
   return decay_table.back();
 }
 
-dkgen::core::decay_mode dkgen::core::particle::null_decay{};
+dkgen::core::decay_mode dkgen::core::particle_definition::null_decay{};
