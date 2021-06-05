@@ -56,11 +56,19 @@ void dkgen::core::decaying_particle_info::reset_decay_position() {
   dec_pos = prod_pos;
   // set decay time to less than production time, to invalidate
   if(dec_pos.t() >= 0.) {
+#ifdef EXPOSE_PHYSICS_VECTORS
+    dec_pos.setT(-1.);
+#else
     dec_pos.set_t(-1.);
+#endif
   }
   else {
     // deal with some floating point rounding conditions;
+#ifdef EXPOSE_PHYSICS_VECTORS
+    dec_pos.setT(prod_pos.t() - std::abs(prod_pos.t()) * 1e-10);
+#else
     dec_pos.set_t(prod_pos.t() - std::abs(prod_pos.t()) * 1e-10);
+#endif
     if(!(dec_pos.t() < prod_pos.t())) {
       // invalid decay time couldn't be set, probably due to the
       // production time being close to the largest negative floating point
@@ -85,7 +93,11 @@ dkgen::core::decaying_particle_info& dkgen::core::decaying_particle_info::set_de
   const double dist = momentum.beta() * tof * speed_of_light;
   const vector3& direction = momentum.vect().unit();
   const vector3& decpos = prod_pos.vect() + direction * dist;
+#ifdef EXPOSE_PHYSICS_VECTORS
+  dec_pos.set(decpos, prod_pos.t() + tof);
+#else
   dec_pos.set_vec_time(decpos, prod_pos.t() + tof);
+#endif
   return *this;
 }
 

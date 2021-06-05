@@ -33,7 +33,12 @@ dkgen::core::geometry& dkgen::core::geometry::set_active_volume_rotation_from_de
 }
 
 void dkgen::core::geometry::make_active_volume_rotation_from_beamline_to_detector_system() {
-  active_volume_rotation_from_beamline_to_detector_system = active_volume_rotation_from_detector_to_beamline_system.get_inverse();
+  active_volume_rotation_from_beamline_to_detector_system =
+#ifdef EXPOSE_PHYSICS_VECTORS
+    active_volume_rotation_from_detector_to_beamline_system.inverse();
+#else
+    active_volume_rotation_from_detector_to_beamline_system.get_inverse();
+#endif
 }
 
 bool dkgen::core::geometry::is_beamline_vector_in_active_volume(const vector3& v) const {

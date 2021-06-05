@@ -1,3 +1,6 @@
+#ifdef EXPOSE_PHYSICS_VECTORS
+
+#else // EXPOSE_PHYSICS_VECTORS
 #include "dkgen/core/vectors.hpp"
 
 // need to define USING_CLHEP or USING_ROOT or USING_XXXXX (tbd) on the compile command line
@@ -428,3 +431,6 @@ dkgen::core::rotation& dkgen::core::rotation::rotate_axes(const dkgen::core::vec
 #undef USING_CLHEP
 #undef USING_ROOT
 #undef USING_XXXX
+
+
+#endif // defined EXPOSE_PHYSICS_VECTORS

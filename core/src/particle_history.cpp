@@ -75,9 +75,14 @@ dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output_with
     part.last_mother = mother;
     part.first_daughter = first_daughter;
     part.last_daughter = last_daughter;
-    part.momentum.set_vec_time(momentum_new, p->production_momentum().e());
     part.mass = p->production_momentum().m();
+#ifdef EXPOSE_PHYSICS_VECTORS
+    part.momentum.set(momentum_new, p->production_momentum().e());
+    part.position.set(position_new, p->production_position().t() + translation.t());
+#else
+    part.momentum.set_vec_time(momentum_new, p->production_momentum().e());
     part.position.set_vec_time(position_new, p->production_position().t() + translation.t());
+#endif
 
   }
   return ret;

@@ -85,10 +85,25 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
       const double phi_cm = 2*M_PI*rng();
       const double decay_momentum = twobody_decay_momentum_in_com_frame(parent_particle_info.mass(), m1, m2);
       fourvector p1, p2;
+#ifdef EXPOSE_PHYSICS_VECTORS
+      p1.setVectM({
+          decay_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+          decay_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+          decay_momentum*cos_theta_cm
+          },m1);
+      p2.setVectM({
+          -decay_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+          -decay_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+          -decay_momentum*cos_theta_cm
+          },m1);
+      p1.boost(decpar->decay_momentum().boostVector());
+      p2.boost(decpar->decay_momentum().boostVector());
+#else
       p1.set_mass_momentum_theta_phi(m1,decay_momentum,std::acos(cos_theta_cm),phi_cm);
       p2.set_mass_momentum_theta_phi(m2,-decay_momentum,std::acos(cos_theta_cm),phi_cm);
       p1.boost(decpar->decay_momentum().get_boost_vector());
       p2.boost(decpar->decay_momentum().get_boost_vector());
+#endif
 
       daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
       daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});
@@ -130,13 +145,41 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
         const double phi_23 = 2*M_PI*rng();
 
 
-        p1.set_mass_momentum_theta_phi(d1.mass(),decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
+#ifdef EXPOSE_PHYSICS_VECTORS
+        p1.setVectM({
+            decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+            decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+            decay_1_momentum*cos_theta_cm
+            },m1);
+        fourvector _p;
+        _p.setVectM({
+            -decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+            -decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+            -decay_1_momentum*cos_theta_cm
+            },m23);
+        const fourvector p23 = _p;
+
+        p2.setVectM({
+            decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::cos(phi_23),
+            decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::sin(phi_23),
+            decay_23_momentum*cos_theta_23
+            },m2);
+        p3.setVectM({
+            -decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::cos(phi_23),
+            -decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::sin(phi_23),
+            -decay_23_momentum*cos_theta_23
+            },m3);
+        p2.boost(p23.boostVector());
+        p3.boost(p23.boostVector());
+#else
+        p1.set_mass_momentum_theta_phi(m1,decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
         const fourvector p23 = fourvector{}.set_mass_momentum_theta_phi(m23,-decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
 
-        p2.set_mass_momentum_theta_phi(d2.mass(),decay_23_momentum,std::acos(cos_theta_23),phi_23);
-        p3.set_mass_momentum_theta_phi(d3.mass(),-decay_23_momentum,std::acos(cos_theta_23),phi_23);
+        p2.set_mass_momentum_theta_phi(m2,decay_23_momentum,std::acos(cos_theta_23),phi_23);
+        p3.set_mass_momentum_theta_phi(m3,-decay_23_momentum,std::acos(cos_theta_23),phi_23);
         p2.boost(p23.get_boost_vector());
         p3.boost(p23.get_boost_vector());
+#endif
 
         if(dm.threebody_dalitz_reweighter.is_enabled()) {
           const double invmass2_12 = (p1+p2).m2();
@@ -147,9 +190,15 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
         break;
       }
 
+#ifdef EXPOSE_PHYSICS_VECTORS
+      p1.boost(decpar->decay_momentum().boostVector());
+      p2.boost(decpar->decay_momentum().boostVector());
+      p3.boost(decpar->decay_momentum().boostVector());
+#else
       p1.boost(decpar->decay_momentum().get_boost_vector());
       p2.boost(decpar->decay_momentum().get_boost_vector());
       p3.boost(decpar->decay_momentum().get_boost_vector());
+#endif
 
       daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
       daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});

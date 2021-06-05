@@ -1,9 +1,36 @@
 #ifndef __dkgen_core_vectors_hpp__
 #define __dkgen_core_vectors_hpp__
 
+#ifdef EXPOSE_PHYSICS_VECTORS
+
+#ifndef USING_CLHEP
+#error "Need to set USE_CLHEP flag"
+#endif
+
+#include <CLHEP/Vector/ThreeVector.h>
+#include <CLHEP/Vector/LorentzVector.h>
+#include <CLHEP/Vector/Rotation.h>
+namespace dkgen {
+  namespace core {
+    using vector3 = CLHEP::Hep3Vector;
+    using fourvector = CLHEP::HepLorentzVector;
+//#define set_t setT
+//#define set_vec_time(v,t) set(v,t) 
+//#define set_mass_momentum_theta_phi(m,mm,t,p) setVectM(vector3{mm*std::sin(t)*std::cos(p),mm*std::sin(t)*std::sin(p),mm*std::cos(t)},m)
+//#define get_boost_vector boostVector
+//#define get_inverse inverse
+    using rotation = CLHEP::HepRotation;
+  }
+}
+
+#else // EXPOSE_PHYSICS_VECTORS
+
+
 // hide away the physics implementation from the end user
 // allows compiling with different library implementations
 // without polluting end user namespace with included libraries
+// However performance is 3x worse due to memory allocations
+// need to investigate speedups
 
 #include <memory>
 #include <experimental/propagate_const>
@@ -111,4 +138,9 @@ namespace dkgen {
 
 // needs to be outside namespaces to overload global operator*
 dkgen::core::vector3 operator*(double a, const dkgen::core::vector3& b);
-#endif
+#endif // EXPOSE_PHYSICS_VECTORS
+
+
+
+#endif // __dkgen_core_vectors_hpp__
+
