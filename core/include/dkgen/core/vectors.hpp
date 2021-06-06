@@ -155,7 +155,9 @@ namespace dkgen {
 }
 
 // needs to be outside namespaces to overload global operator*
-dkgen::core::vector3 operator*(double a, const dkgen::core::vector3& b);
+inline dkgen::core::vector3 operator*(double a, const dkgen::core::vector3& b) {
+  return b*a;
+}
 #endif // EXPOSE_PHYSICS_VECTORS
 
 

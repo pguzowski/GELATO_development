@@ -8,9 +8,7 @@ namespace dkgen {
   namespace core {
     class config {
       public:
-        enum system_of_units {
-          GeV_cm_ns
-        };
+        enum class system_of_units { GeV_cm_ns };
         struct standard_particle {
           int pdgcode;
           double mass;

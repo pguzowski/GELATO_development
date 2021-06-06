@@ -255,9 +255,9 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
 #endif
 
     add_new_daughter_to_queue(sign_flip ^ sign_flip1 ? d1.antipdg() : d1.pdg(), parent->decay_position(), std::move(p1),
-          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+          dm.daughters[0].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
     add_new_daughter_to_queue(sign_flip ^ sign_flip2 ? d2.antipdg() : d2.pdg(), parent->decay_position(), std::move(p2),
-          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+          dm.daughters[1].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
 
   }
   else if(dm.daughters.size() == 3) {
@@ -355,11 +355,11 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
 #endif
 
     add_new_daughter_to_queue(sign_flip ^ sign_flip1 ? d1.antipdg() : d1.pdg(), parent->decay_position(), std::move(p1),
-          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+          dm.daughters[0].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
     add_new_daughter_to_queue(sign_flip ^ sign_flip2 ? d2.antipdg() : d2.pdg(), parent->decay_position(), std::move(p2),
-          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+          dm.daughters[1].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
     add_new_daughter_to_queue(sign_flip ^ sign_flip3 ? d3.antipdg() : d3.pdg(), parent->decay_position(), std::move(p3),
-          dm.daughters[2].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+          dm.daughters[2].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
   }
   else {
     throw std::runtime_error("4+ body decays are not implemented");

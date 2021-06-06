@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   dkgen::core::geometry geo({0,1e4,1.e4},{1e3,1e3,1e3});
   driver.set_geometry(geo);
   dkgen::core::config conf;
-  conf.fix_system_of_units(dkgen::core::config::GeV_cm_ns);
+  conf.fix_system_of_units(dkgen::core::config::system_of_units::GeV_cm_ns);
   conf.set_force_decays_in_detector(true);
   driver.set_config(conf);
 
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
         {0.,0.,0.,0.},
         {0.,0.,0.,0.},
         {0.,0.,mom,std::sqrt(100.*100.+mom*mom)},
-        dkgen::core::decaying_particle_info::non_final
+        dkgen::core::decaying_particle_info::state_type::non_final
         },
         [&rng, &gen]()->double{return rng(gen);});
 

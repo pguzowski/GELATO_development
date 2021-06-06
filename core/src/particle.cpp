@@ -25,7 +25,7 @@ dkgen::core::particle_definition::particle_definition(int pdgc, double m, double
   }
 }
       
-dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(const dkgen::core::decay_mode& dm) {
+dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(const decay_mode& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }
@@ -35,7 +35,7 @@ dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(co
   decay_table.push_back(dm);
   return *this;
 }
-dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(dkgen::core::decay_mode&& dm) {
+dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(decay_mode&& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("Decay table has been finalised already!");
   }

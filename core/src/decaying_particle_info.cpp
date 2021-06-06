@@ -4,7 +4,7 @@
 #include <numeric>
 
 dkgen::core::decaying_particle_info::decaying_particle_info() 
-  : pdg_code{0}, parent{nullptr}, decay_wt{1.}, state{final_state}
+  : pdg_code{0}, parent{nullptr}, decay_wt{1.}, state{state_type::final_state}
 {
 }
 

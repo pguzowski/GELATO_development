@@ -8,7 +8,7 @@
 #include <iostream>
 #endif
 
-dkgen::core::geometry::geometry(dkgen::core::vector3 centre, dkgen::core::vector3 dims, dkgen::core::rotation rot_from_detctor_to_beamline_system)
+dkgen::core::geometry::geometry(vector3 centre, vector3 dims, rotation rot_from_detctor_to_beamline_system)
   : active_volume_centre_in_beamline_system{std::move(centre)},
   active_volume_half_dimensions_in_detector_system{std::move(dims)},
   active_volume_rotation_from_detector_to_beamline_system{std::move(rot_from_detctor_to_beamline_system)}
@@ -16,17 +16,17 @@ dkgen::core::geometry::geometry(dkgen::core::vector3 centre, dkgen::core::vector
   make_active_volume_rotation_from_beamline_to_detector_system();
 }
 
-dkgen::core::geometry& dkgen::core::geometry::set_active_volume_centre_in_beamline_system(dkgen::core::vector3 centre) {
+dkgen::core::geometry& dkgen::core::geometry::set_active_volume_centre_in_beamline_system(vector3 centre) {
   active_volume_centre_in_beamline_system = std::move(centre);
   return *this;
 }
 
-dkgen::core::geometry& dkgen::core::geometry::set_active_volume_half_dimensions_in_detector_system(dkgen::core::vector3 dims) {
+dkgen::core::geometry& dkgen::core::geometry::set_active_volume_half_dimensions_in_detector_system(vector3 dims) {
   active_volume_half_dimensions_in_detector_system = std::move(dims);
   return *this;
 }
 
-dkgen::core::geometry& dkgen::core::geometry::set_active_volume_rotation_from_detector_to_beamline_system(dkgen::core::rotation rot) {
+dkgen::core::geometry& dkgen::core::geometry::set_active_volume_rotation_from_detector_to_beamline_system(rotation rot) {
   active_volume_rotation_from_detector_to_beamline_system = std::move(rot);
   make_active_volume_rotation_from_beamline_to_detector_system();
   return *this;
@@ -66,7 +66,7 @@ dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_in
 #endif
   auto r = get_active_volume_intersections_for_detector_vectors(vv.first, vv.second);
   // need to rotate vectors back to beamline coordinates
-  auto transform = [this](dkgen::core::vector3& v) {
+  auto transform = [this](vector3& v) {
 #ifdef DEBUG
   std::cout << __FILE__<<" "<<__LINE__<<" "
     <<v.x()<<","<<v.y()<<","<<v.z();
@@ -83,7 +83,7 @@ dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_in
 
 dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_intersections_for_detector_vectors(
     const vector3& origin, const vector3& direction) const {
-  dkgen::core::ordered_list_of_vectors ret;
+  ordered_list_of_vectors ret;
   // work out all coordinates that interesect the 6 planes of the bounding box
   // first add case where origin is inside the detector
   if(is_detector_vector_in_active_volume(origin)) {
@@ -154,35 +154,35 @@ dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_in
   return ret;
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_beamline_vector_to_detector_coordinates(const dkgen::core::vector3& vin) const {
+dkgen::core::vector3 dkgen::core::geometry::rotate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_beamline_to_detector_system * vin;
 }
 
 std::pair<dkgen::core::vector3, dkgen::core::vector3>
 dkgen::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(
-    const dkgen::core::vector3& vpos, const dkgen::core::vector3& vdir) const {
-  dkgen::core::vector3 new_vdir = active_volume_rotation_from_beamline_to_detector_system * vdir;
-  dkgen::core::vector3 new_vpos =
+    const vector3& vpos, const vector3& vdir) const {
+  vector3 new_vdir = active_volume_rotation_from_beamline_to_detector_system * vdir;
+  vector3 new_vpos =
     active_volume_rotation_from_beamline_to_detector_system * (vpos - active_volume_centre_in_beamline_system);
   return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(const dkgen::core::vector3& vin) const {
+dkgen::core::vector3 dkgen::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_beamline_to_detector_system * (vin - active_volume_centre_in_beamline_system);
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_detector_vector_to_beamline_coordinates(const dkgen::core::vector3& vin) const {
+dkgen::core::vector3 dkgen::core::geometry::rotate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_detector_to_beamline_system * vin;
 }
 
 std::pair<dkgen::core::vector3, dkgen::core::vector3>
 dkgen::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(
-    const dkgen::core::vector3& vpos, const dkgen::core::vector3& vdir) const {
-  dkgen::core::vector3 new_vdir = active_volume_rotation_from_detector_to_beamline_system * vdir;
-  dkgen::core::vector3 new_vpos = active_volume_rotation_from_detector_to_beamline_system * vpos + active_volume_centre_in_beamline_system;
+    const vector3& vpos, const vector3& vdir) const {
+  vector3 new_vdir = active_volume_rotation_from_detector_to_beamline_system * vdir;
+  vector3 new_vpos = active_volume_rotation_from_detector_to_beamline_system * vpos + active_volume_centre_in_beamline_system;
   return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(const dkgen::core::vector3& vin) const {
+dkgen::core::vector3 dkgen::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_detector_to_beamline_system * vin + active_volume_centre_in_beamline_system;
 }

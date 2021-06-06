@@ -1,5 +1,5 @@
-#ifndef __dkgen_physics_higgs_portal_scalar_hpp__
-#define __dkgen_physics_higgs_portal_scalar_hpp__
+#ifndef __dkgen_physics_heavy_neutral_leptons_hpp__
+#define __dkgen_physics_heavy_neutral_leptons_hpp__
 
 #include "dkgen/core/driver.hpp"
 #include "dkgen/core/particle.hpp"
@@ -8,9 +8,14 @@
 
 namespace dkgen {
   namespace physics {
-    namespace higgs_portal_from_kaons {
-      dkgen::core::driver::particle_map create_particle_content(double scalar_mass, double theta,
+    namespace heavy_neutral_leptons {
+      enum class decay_modes { gamma_nu, nu_nu_nu, e_e_nu, e_mu_nu, mu_mu_nu, e_pi, mu_pi, pi0_nu };
+      enum class production_modes { k_mu2, k_e2, k_e3, pi_mu, mu_e3 };
+      dkgen::core::driver::particle_map create_particle_content(
+          double HNL_mass, double U_e4, double U_mu4, double U_tau4,
           const dkgen::core::config& conf,
+          // all "visible" final states
+          std::vector<decay_modes> decay_modes_to_use = { gamma_nu, /*e_e_nu, e_mu_nu, mu_mu_nu,*/ e_pi, mu_pi, pi0_nu },
           dkgen::core::driver::particle_map input = {}) {
 
         auto ret = input;
@@ -21,14 +26,22 @@ namespace dkgen {
         auto& kaon_0L = conf.physical_params().find_particle("kaon_0L");
         auto& elec    = conf.physical_params().find_particle("elec");
         auto& muon    = conf.physical_params().find_particle("muon");
+        auto& gamma   = conf.physical_params().find_particle("gamma");
+        auto& nu_e    = conf.physical_params().find_particle("nu_e");
+        auto& nu_mu   = conf.physical_params().find_particle("nu_mu");
+        auto& nu_tau  = conf.physical_params().find_particle("nu_tau");
 
-        const int scalar_pdg  = 54; // free pdg code for bsm particles
+        const int HNL_pdg  = 18; // free pdg code for 4th generation neutrino
         const int pion_pm_pdg = pion_pm.pdgcode;
         const int pion_0_pdg  = pion_0.pdgcode;
         const int kaon_pm_pdg = kaon_pm.pdgcode;
         const int kaon_0L_pdg = kaon_0L.pdgcode;
         const int elec_pdg    = elec.pdgcode;
         const int muon_pdg    = muon.pdgcode;
+        const int gamma_pdg   = gamma.pdgcode;
+        const int nu_e_pdg   = nu_e.pdgcode;
+        const int nu_mu_pdg   = nu_mu.pdgcode;
+        const int nu_tau_pdg   = nu_tau.pdgcode;
 
         // GeV system of units
         const double pion_pm_mass = pion_pm.mass;

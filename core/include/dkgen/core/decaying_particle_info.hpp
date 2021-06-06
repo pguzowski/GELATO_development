@@ -17,7 +17,7 @@ namespace dkgen {
         // final states are non-decaying (within this framework)
         // pre final states are states that only decay to final states
         // non final states are the rest
-        typedef enum { non_final, pre_final_state, final_state } state_type;
+        enum class state_type { non_final, pre_final_state, final_state };
 
         decaying_particle_info();
         // Parent should be nullptr or ptr to parent 
@@ -56,11 +56,11 @@ namespace dkgen {
 
         decaying_particle_info& add_child(child_t&& child) { children.push_back(std::move(child)); return *this; }
 
-        bool is_final_state() const { return state == final_state; }
+        bool is_final_state() const { return state == state_type::final_state; }
         // all daughters are final states
-        bool is_pre_final_state() const { return state == pre_final_state; }
-        decaying_particle_info& set_pre_final_state() { state = pre_final_state; return *this; }
-        decaying_particle_info& unset_pre_final_state() { state = non_final; return *this; }
+        bool is_pre_final_state() const { return state == state_type::pre_final_state; }
+        decaying_particle_info& set_pre_final_state() { state = state_type::pre_final_state; return *this; }
+        decaying_particle_info& unset_pre_final_state() { state = state_type::non_final; return *this; }
 
         bool is_decay_set() const;
 

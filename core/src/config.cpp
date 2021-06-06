@@ -7,9 +7,9 @@
 #include <TDatabasePDG.h>
 #endif
 
-dkgen::core::config& dkgen::core::config::fix_system_of_units(dkgen::core::config::system_of_units sys) {
+dkgen::core::config& dkgen::core::config::fix_system_of_units(system_of_units sys) {
   switch(sys) {
-    case GeV_cm_ns:
+    case system_of_units::GeV_cm_ns:
       pparams.speed_of_light = 29.9791932;
       pparams.hbar = 6.582119569e-16;
       pparams.higgs_vev = 246.22;

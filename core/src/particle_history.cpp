@@ -44,16 +44,16 @@ dkgen::core::particle_history& dkgen::core::particle_history::build_hierarchy(st
 }
 
 dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output() const {
-  return build_hepevt_output_with_translation_followed_by_rotation(dkgen::core::fourvector{},dkgen::core::rotation{});
+  return build_hepevt_output_with_translation_followed_by_rotation(fourvector{},rotation{});
 }
 
 
 dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output_with_translation_followed_by_rotation(
-    const dkgen::core::fourvector& translation, const dkgen::core::rotation& rot) const {
+    const fourvector& translation, const rotation& rot) const {
   if(hierarchy.empty()) {
     throw std::runtime_error("particle_history: tried to build hepevt output for empty hierarchy");
   }
-  dkgen::core::hepevt_info ret;
+  hepevt_info ret;
   ret.event_counter = event_counter;
   ret.total_weight = total_weight;
   for(auto const& p : hierarchy) {
@@ -73,8 +73,8 @@ dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output_with
     const int first_daughter = has_daughters ? find_pid(p->get_children().front().get()) : 0;
     const int last_daughter = has_daughters ? find_pid(p->get_children().back().get()) : 0;
     
-    const dkgen::core::vector3& momentum_new = rot * p->production_momentum().vect();
-    const dkgen::core::vector3& position_new = rot * (p->production_position().vect() + translation.vect());
+    const vector3& momentum_new = rot * p->production_momentum().vect();
+    const vector3& position_new = rot * (p->production_position().vect() + translation.vect());
 
     ret.particle_info.push_back({});
     hepevt_particle& part = ret.particle_info.back();
