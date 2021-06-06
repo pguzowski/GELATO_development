@@ -31,7 +31,10 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
   // will keep ownership of all children
   std::unique_ptr<decaying_particle_info> top_parent = std::make_unique<decaying_particle_info>(std::move(parent_meson));
 
-  std::queue<decaying_particle_info_ptr> queue_to_decay;
+  // implement queue as std::vector that grows
+  // (not too worried about memory size, but worried about timing)
+  std::vector<decaying_particle_info_ptr> queue_to_decay;
+  queue_to_decay.reserve(50);
   std::vector<decaying_particle_info_ptr> pure_final_states;
 
   // mutli stage process, will have to refactor into multiple functions
@@ -47,187 +50,18 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
   //
 
   // stage 1: produce decay chain, and momenta (not positions)
-  queue_to_decay.push(top_parent.get());
-  while(!queue_to_decay.empty()) {
-    auto decpar = queue_to_decay.front();
-    queue_to_decay.pop();
-
-    if(decpar->is_final_state()) continue;
-
-    const particle_definition& parent_particle_info = find_particle(decpar->pdg());
-    auto const& dm = parent_particle_info.generate_decay_mode(rng);
-    if(dm.is_null()) continue;
-
-    if(config.force_decays_inside_detector() && dm.is_pure_final_state()) {
-      decpar->set_pre_final_state();
-      pure_final_states.push_back(decpar);
-    }
-
-    struct daughter_info {
-      int pdg;
-      fourvector momentum;
-      bool final_state;
-    };
-    std::vector<daughter_info> daughters;
-    daughters.reserve(dm.daughters.size());
-
-    auto twobody_decay_momentum_in_com_frame = [](double parent_mass, double m1, double m2) -> double {
-      return std::sqrt((parent_mass+m1+m2)*(parent_mass-m1-m2)*(parent_mass+m1-m2)*(parent_mass-m1+m2))/(2.*parent_mass);
-    };
-
-    // need to flip signs of daughters if parent decay was antiparticle
-    const int sign_flip = (decpar->pdg() != std::abs(decpar->pdg())) ? -1 : 1;
-
-    if(dm.daughters.size() == 2) {
-      auto const& d1 = find_particle(dm.daughters[0].first);
-      auto const& d2 = find_particle(dm.daughters[1].first);
-      const double m1 = d1.mass();
-      const double m2 = d2.mass();
-      const double cos_theta_cm = 1.-2.*rng();
-      const double phi_cm = 2*M_PI*rng();
-      const double decay_momentum = twobody_decay_momentum_in_com_frame(parent_particle_info.mass(), m1, m2);
-      fourvector p1, p2;
-#ifdef EXPOSE_PHYSICS_VECTORS
-      p1.setVectM({
-          decay_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
-          decay_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
-          decay_momentum*cos_theta_cm
-          },m1);
-      p2.setVectM({
-          -decay_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
-          -decay_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
-          -decay_momentum*cos_theta_cm
-          },m1);
-      p1.boost(decpar->decay_momentum().boostVector());
-      p2.boost(decpar->decay_momentum().boostVector());
-#else
-      p1.set_mass_momentum_theta_phi(m1,decay_momentum,std::acos(cos_theta_cm),phi_cm);
-      p2.set_mass_momentum_theta_phi(m2,-decay_momentum,std::acos(cos_theta_cm),phi_cm);
-      p1.boost(decpar->decay_momentum().get_boost_vector());
-      p2.boost(decpar->decay_momentum().get_boost_vector());
-#endif
-
-      daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
-      daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});
-
-    }
-    else if(dm.daughters.size() == 3) {
-      auto const& d1 = find_particle(dm.daughters[0].first);
-      auto const& d2 = find_particle(dm.daughters[1].first);
-      auto const& d3 = find_particle(dm.daughters[2].first);
-
-      const double m1 = d1.mass();
-      const double m2 = d2.mass();
-      const double m3 = d3.mass();
-      const double M  = parent_particle_info.mass();
-      const double tcm = M - m1 - m2 - m3;
-
-      // actually larger than the max weight
-      const double decay_max_weight =
-        twobody_decay_momentum_in_com_frame(tcm+m1,0,m1)
-        * twobody_decay_momentum_in_com_frame(tcm+m1+m2,m1,m2);
-
-      fourvector p1, p2, p3;
-      while(true) {
-        const double three_body_split = rng();
-        const double m23 = m2 + m3 + three_body_split * tcm;
-
-        const double decay_1_momentum = twobody_decay_momentum_in_com_frame(M, m23, m1);
-        const double decay_23_momentum = twobody_decay_momentum_in_com_frame(m23, m2, m3);
-
-        const double decay_weight = decay_1_momentum*decay_23_momentum;
-
-        if(decay_weight < rng() * decay_max_weight) {
-          continue; // while(true)
-        }
-
-        const double cos_theta_cm = 1.-2.*rng();
-        const double phi_cm = 2*M_PI*rng();
-        const double cos_theta_23 = 1.-2.*rng();
-        const double phi_23 = 2*M_PI*rng();
-
-
-#ifdef EXPOSE_PHYSICS_VECTORS
-        p1.setVectM({
-            decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
-            decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
-            decay_1_momentum*cos_theta_cm
-            },m1);
-        fourvector _p;
-        _p.setVectM({
-            -decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
-            -decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
-            -decay_1_momentum*cos_theta_cm
-            },m23);
-        const fourvector p23 = _p;
-
-        p2.setVectM({
-            decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::cos(phi_23),
-            decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::sin(phi_23),
-            decay_23_momentum*cos_theta_23
-            },m2);
-        p3.setVectM({
-            -decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::cos(phi_23),
-            -decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::sin(phi_23),
-            -decay_23_momentum*cos_theta_23
-            },m3);
-        p2.boost(p23.boostVector());
-        p3.boost(p23.boostVector());
-#else
-        p1.set_mass_momentum_theta_phi(m1,decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
-        const fourvector p23 = fourvector{}.set_mass_momentum_theta_phi(m23,-decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
-
-        p2.set_mass_momentum_theta_phi(m2,decay_23_momentum,std::acos(cos_theta_23),phi_23);
-        p3.set_mass_momentum_theta_phi(m3,-decay_23_momentum,std::acos(cos_theta_23),phi_23);
-        p2.boost(p23.get_boost_vector());
-        p3.boost(p23.get_boost_vector());
-#endif
-
-        if(dm.threebody_dalitz_reweighter.is_enabled()) {
-          const double invmass2_12 = (p1+p2).m2();
-          const double invmass2_13 = (p1+p3).m2();
-          const double dalitz_weight = dm.threebody_dalitz_reweighter(invmass2_12,invmass2_13);
-          decpar->multiply_decay_weight(dalitz_weight);
-        }
-        break;
-      }
-
-#ifdef EXPOSE_PHYSICS_VECTORS
-      p1.boost(decpar->decay_momentum().boostVector());
-      p2.boost(decpar->decay_momentum().boostVector());
-      p3.boost(decpar->decay_momentum().boostVector());
-#else
-      p1.boost(decpar->decay_momentum().get_boost_vector());
-      p2.boost(decpar->decay_momentum().get_boost_vector());
-      p3.boost(decpar->decay_momentum().get_boost_vector());
-#endif
-
-      daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
-      daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});
-      daughters.push_back({sign_flip * dm.daughters[2].first, p3, dm.daughters[2].second});
-
-    }
-    else {
-      throw std::runtime_error("4+ body decays are not implemented");
-    }
-
-
-    for(auto& d : daughters) {
-      const int pdg = d.pdg;
-      const fourvector& momentum = d.momentum;
-      const bool is_final_state = d.final_state;
-      decpar->add_child(std::make_unique<decaying_particle_info>(
-            decpar, pdg, 
-            decpar->decay_position(), momentum,
-            is_final_state ? decaying_particle_info::final_state : decaying_particle_info::non_final
-            ));
-      queue_to_decay.push(decpar->get_children().back().get());
-    }
-
+  queue_to_decay.push_back(top_parent.get());
+  auto qiter = queue_to_decay.begin();
+  size_t n_decayed = 0; // keeps track of how many decays have been done, to advance qiter
+  //while(!queue_to_decay.empty()) {
+  while(qiter != queue_to_decay.end()) {
+    generate_decay_tree(*qiter, queue_to_decay, pure_final_states, rng);
+    // cannot just do ++qiter because queue_to_decay might have reallocated
+    qiter = std::next(queue_to_decay.begin(), ++n_decayed);
   }
 
 
-  // stage (1|2).5: choose random pure final state to force that decay into
+  // stage 1.5: choose random pure final state to force that decay into
   // the detector (if option has been enabled; otherwise pure_final_states is empty) 
   if(pure_final_states.size() > 1) {
     const size_t choice = static_cast<size_t>(pure_final_states.size() * rng());
@@ -253,7 +87,8 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
 }
 
 dkgen::core::driver& dkgen::core::driver::add_particle_definition(const dkgen::core::particle_definition& p) {
-  particle_content[std::abs(p.pdg())] = p;
+  particle_content.push_back(p);
+  sort_particles();
   return *this;
 }
 
@@ -265,11 +100,18 @@ dkgen::core::driver& dkgen::core::driver::set_geometry(const dkgen::core::geomet
 
 dkgen::core::driver& dkgen::core::driver::set_particle_content(const particle_map& p) {
   particle_content = p;
+  sort_particles();
   return *this;
 }
 dkgen::core::driver& dkgen::core::driver::set_particle_content(particle_map&& p) {
   particle_content = std::move(p);
+  sort_particles();
   return *this;
+}
+
+void dkgen::core::driver::sort_particles() {
+  std::sort(particle_content.begin(), particle_content.end(),
+      [](auto& a, auto& b) { return std::abs(a.pdg()) < std::abs(b.pdg()); });
 }
 
 
@@ -333,11 +175,12 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
 }
 
 const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int pdg) const {
-  auto p = particle_content.find(std::abs(pdg));
-  if (p == particle_content.end()) {
+  auto p = std::lower_bound(particle_content.begin(), particle_content.end(), std::abs(pdg),
+      [](auto& a, int find_pdg) { return std::abs(a.pdg()) < find_pdg; } );
+  if (p == particle_content.end() || p->pdg() != std::abs(pdg)) {
     throw std::runtime_error("Undefined particle requested! PDG code "+std::to_string(pdg));
   }
-  return p->second;
+  return *p;
 };
 
 
@@ -347,4 +190,183 @@ dkgen::core::driver& dkgen::core::driver::set_config(const dkgen::core::config& 
   }
   config = conf;
   return *this;
+}
+
+
+void
+dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std::vector<decaying_particle_info_ptr>& queue,
+    std::vector<decaying_particle_info_ptr>& pure_final_states,
+    random_uniform_0_1_generator rng) const {
+
+  if(parent->is_final_state()) return;
+
+  const particle_definition& parent_particle_info = find_particle(parent->pdg());
+  auto const& dm = parent_particle_info.generate_decay_mode(rng);
+  if(dm.is_null()) return;
+
+  if(config.force_decays_inside_detector() && dm.is_pure_final_state()) {
+    parent->set_pre_final_state();
+    pure_final_states.push_back(parent);
+  }
+
+  struct daughter_info {
+    int pdg;
+    fourvector momentum;
+    bool final_state;
+  };
+  std::vector<daughter_info> daughters;
+  daughters.reserve(dm.daughters.size());
+
+  auto twobody_decay_momentum_in_com_frame = [](double parent_mass, double m1, double m2) -> double {
+    return std::sqrt((parent_mass+m1+m2)*(parent_mass-m1-m2)*(parent_mass+m1-m2)*(parent_mass-m1+m2))/(2.*parent_mass);
+  };
+
+  // need to flip signs of daughters if parent decay was antiparticle
+  const bool sign_flip = (parent->pdg() != parent_particle_info.pdg()) ? true : false;
+
+  if(dm.daughters.size() == 2) {
+    auto const& d1 = find_particle(dm.daughters[0].first);
+    auto const& d2 = find_particle(dm.daughters[1].first);
+    const double m1 = d1.mass();
+    const double m2 = d2.mass();
+    const double cos_theta_cm = 1.-2.*rng();
+    const double phi_cm = 2*M_PI*rng();
+    const double decay_momentum = twobody_decay_momentum_in_com_frame(parent_particle_info.mass(), m1, m2);
+    fourvector p1, p2;
+#ifdef EXPOSE_PHYSICS_VECTORS
+    p1.setVectM({
+        decay_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+        decay_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+        decay_momentum*cos_theta_cm
+        },m1);
+    p2.setVectM({
+        -decay_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+        -decay_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+        -decay_momentum*cos_theta_cm
+        },m2);
+    p1.boost(parent->decay_momentum().boostVector());
+    p2.boost(parent->decay_momentum().boostVector());
+#else
+    p1.set_mass_momentum_theta_phi(m1,decay_momentum,std::acos(cos_theta_cm),phi_cm);
+    p2.set_mass_momentum_theta_phi(m2,-decay_momentum,std::acos(cos_theta_cm),phi_cm);
+    p1.boost(parent->decay_momentum().get_boost_vector());
+    p2.boost(parent->decay_momentum().get_boost_vector());
+#endif
+
+    daughters.push_back({sign_flip ? d1.antipdg() : d1.pdg(), p1, dm.daughters[0].second});
+    daughters.push_back({sign_flip ? d2.antipdg() : d2.pdg(), p2, dm.daughters[1].second});
+
+  }
+  else if(dm.daughters.size() == 3) {
+    auto const& d1 = find_particle(dm.daughters[0].first);
+    auto const& d2 = find_particle(dm.daughters[1].first);
+    auto const& d3 = find_particle(dm.daughters[2].first);
+
+    const double m1 = d1.mass();
+    const double m2 = d2.mass();
+    const double m3 = d3.mass();
+    const double M  = parent_particle_info.mass();
+    const double tcm = M - m1 - m2 - m3;
+
+    // actually larger than the max weight
+    const double decay_max_weight =
+      twobody_decay_momentum_in_com_frame(tcm+m1,0,m1)
+      * twobody_decay_momentum_in_com_frame(tcm+m1+m2,m1,m2);
+
+    fourvector p1, p2, p3;
+    while(true) {
+      const double three_body_split = rng();
+      const double m23 = m2 + m3 + three_body_split * tcm;
+
+      const double decay_1_momentum = twobody_decay_momentum_in_com_frame(M, m23, m1);
+      const double decay_23_momentum = twobody_decay_momentum_in_com_frame(m23, m2, m3);
+
+      const double decay_weight = decay_1_momentum*decay_23_momentum;
+
+      if(decay_weight < rng() * decay_max_weight) {
+        continue; // while(true)
+      }
+
+      const double cos_theta_cm = 1.-2.*rng();
+      const double phi_cm = 2*M_PI*rng();
+      const double cos_theta_23 = 1.-2.*rng();
+      const double phi_23 = 2*M_PI*rng();
+
+
+#ifdef EXPOSE_PHYSICS_VECTORS
+      p1.setVectM({
+          decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+          decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+          decay_1_momentum*cos_theta_cm
+          },m1);
+      fourvector _p;
+      _p.setVectM({
+          -decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::cos(phi_cm),
+          -decay_1_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
+          -decay_1_momentum*cos_theta_cm
+          },m23);
+      const fourvector p23 = _p;
+
+      p2.setVectM({
+          decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::cos(phi_23),
+          decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::sin(phi_23),
+          decay_23_momentum*cos_theta_23
+          },m2);
+      p3.setVectM({
+          -decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::cos(phi_23),
+          -decay_23_momentum*std::sin(std::acos(cos_theta_23))*std::sin(phi_23),
+          -decay_23_momentum*cos_theta_23
+          },m3);
+      p2.boost(p23.boostVector());
+      p3.boost(p23.boostVector());
+#else
+      p1.set_mass_momentum_theta_phi(m1,decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
+      const fourvector p23 = fourvector{}.set_mass_momentum_theta_phi(m23,-decay_1_momentum,std::acos(cos_theta_cm),phi_cm);
+
+      p2.set_mass_momentum_theta_phi(m2,decay_23_momentum,std::acos(cos_theta_23),phi_23);
+      p3.set_mass_momentum_theta_phi(m3,-decay_23_momentum,std::acos(cos_theta_23),phi_23);
+      p2.boost(p23.get_boost_vector());
+      p3.boost(p23.get_boost_vector());
+#endif
+
+      if(dm.threebody_dalitz_reweighter.is_enabled()) {
+        const double invmass2_12 = (p1+p2).m2();
+        const double invmass2_13 = (p1+p3).m2();
+        const double dalitz_weight = dm.threebody_dalitz_reweighter(invmass2_12,invmass2_13);
+        parent->multiply_decay_weight(dalitz_weight);
+      }
+      break;
+    }
+
+#ifdef EXPOSE_PHYSICS_VECTORS
+    p1.boost(parent->decay_momentum().boostVector());
+    p2.boost(parent->decay_momentum().boostVector());
+    p3.boost(parent->decay_momentum().boostVector());
+#else
+    p1.boost(parent->decay_momentum().get_boost_vector());
+    p2.boost(parent->decay_momentum().get_boost_vector());
+    p3.boost(parent->decay_momentum().get_boost_vector());
+#endif
+
+    daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
+    daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});
+    daughters.push_back({sign_flip * dm.daughters[2].first, p3, dm.daughters[2].second});
+
+  }
+  else {
+    throw std::runtime_error("4+ body decays are not implemented");
+  }
+
+
+  for(auto& d : daughters) {
+    const int pdg = d.pdg;
+    const fourvector& momentum = d.momentum;
+    const bool is_final_state = d.final_state;
+    parent->add_child(std::make_unique<decaying_particle_info>(
+          parent, pdg, 
+          parent->decay_position(), momentum,
+          is_final_state ? decaying_particle_info::final_state : decaying_particle_info::non_final
+          ));
+    queue.push_back(parent->get_children().back().get());
+  }
 }

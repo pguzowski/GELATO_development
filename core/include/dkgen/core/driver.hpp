@@ -14,8 +14,7 @@ namespace dkgen {
     class particle_definition;
     class driver {
       public:
-        using abs_particle_pdg = unsigned int;
-        using particle_map = std::map<abs_particle_pdg, particle_definition>;
+        using particle_map = std::vector<particle_definition>;
         
         driver& add_particle_definition(const particle_definition& p);
         driver& set_particle_content(const particle_map& p);
@@ -44,13 +43,15 @@ namespace dkgen {
             random_uniform_0_1_generator rng) const;
         */
 
+        void sort_particles();
         const particle_definition& find_particle(int pdg) const;
 
         // recursively generates daughters from decay tables, and momenta
         // doesn't do positions (use generate_decay_position(...) for that)
-        // returns vector of pre-final-state decays 
-        // if "force_decays_inside_detector" config flag is on
-        std::vector<decaying_particle_info_ptr> generate_decay_tree(decaying_particle_info_ptr parent);
+        void generate_decay_tree(decaying_particle_info_ptr parent,
+            std::vector<decaying_particle_info_ptr>& queue,
+            std::vector<decaying_particle_info_ptr>& pure_final_states,
+            random_uniform_0_1_generator rng) const;
     };
   }
 }

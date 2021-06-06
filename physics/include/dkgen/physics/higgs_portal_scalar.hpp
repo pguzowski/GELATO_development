@@ -78,14 +78,16 @@ namespace dkgen {
         }
         const double scalar_lifetime = hbar / total_decay_rate;
 
-        ret[std::abs(kaon_pm_pdg)] =
-          dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt}.add_decay({1.,{{pion_pm_pdg,true},{scalar_pdg,false}}}).finalise_decay_table();
-        ret[std::abs(kaon_0L_pdg)] =
-          dkgen::core::particle_definition{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt}.add_decay({1.,{{pion_0_pdg,true},{scalar_pdg,false}}}).finalise_decay_table();
+        ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt}
+            .add_decay({1.,{{pion_pm_pdg,true},{scalar_pdg,false}}})
+            .finalise_decay_table());
+        ret.push_back(dkgen::core::particle_definition{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt}
+            .add_decay({1.,{{pion_0_pdg,true},{scalar_pdg,false}}})
+            .finalise_decay_table());
 
-        auto& scalar_info = ret[std::abs(scalar_pdg)];
-
-        scalar_info = dkgen::core::particle_definition{scalar_pdg, scalar_mass, scalar_lifetime};
+        const bool self_conjugate = true;
+        ret.push_back(dkgen::core::particle_definition{scalar_pdg, scalar_mass, scalar_lifetime, self_conjugate});
+        auto& scalar_info = ret.back();
 
         if(scalar_mass > 2*elec_mass) {
           scalar_info.add_decay(
@@ -110,10 +112,10 @@ namespace dkgen {
 
         scalar_info.finalise_decay_table();
         
-        ret[std::abs(pion_pm_pdg)] = dkgen::core::particle_definition{pion_pm_pdg,pion_pm_mass,pion_pm_lt};
-        ret[std::abs(pion_0_pdg)] = dkgen::core::particle_definition{pion_0_pdg,pion_0_mass,pion_0_lt};
-        ret[std::abs(elec_pdg)] = dkgen::core::particle_definition{elec_pdg,elec_mass,elec_lt};
-        ret[std::abs(muon_pdg)] = dkgen::core::particle_definition{muon_pdg,muon_mass,muon_lt};
+        ret.push_back(dkgen::core::particle_definition{pion_pm_pdg,pion_pm_mass,pion_pm_lt});
+        ret.push_back(dkgen::core::particle_definition{pion_0_pdg,pion_0_mass,pion_0_lt});
+        ret.push_back(dkgen::core::particle_definition{elec_pdg,elec_mass,elec_lt});
+        ret.push_back(dkgen::core::particle_definition{muon_pdg,muon_mass,muon_lt});
 
         return ret;
       }

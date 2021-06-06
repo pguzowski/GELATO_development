@@ -3,7 +3,7 @@
 
 #include "dkgen/core/vectors.hpp"
 
-#include <map>
+#include <vector>
 
 namespace dkgen {
   namespace core {
@@ -23,7 +23,7 @@ namespace dkgen {
             return *this;
           };
       private:
-        std::map<double,vector3> map;
+        std::vector<std::pair<double,vector3>> map;
     };
   }
 }

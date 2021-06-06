@@ -66,9 +66,11 @@ namespace dkgen {
     class particle_definition {
       public:
         particle_definition() = default;
-        particle_definition(int pdgc, double m, double lt = -1.); // negative lifetime for stable or final state particles
+        // negative lifetime for stable or final state particles
+        particle_definition(int pdgc, double m, double lt = -1., bool scj = false);
 
         int pdg() const { return pdg_code; };
+        int antipdg() const { return self_conjugate ? pdg_code : -pdg_code; };
         double mass() const { return m; };
         double lifetime() const { return ltime; };
 
@@ -86,6 +88,7 @@ namespace dkgen {
         double ltime;
         std::vector<decay_mode> decay_table;
         std::vector<double> sum_branching_ratios;
+        bool self_conjugate;
 
         static decay_mode null_decay;
     };

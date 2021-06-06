@@ -14,10 +14,11 @@ bool dkgen::core::decay_mode::is_pure_final_state() const {
   return std::all_of(daughters.begin(), daughters.end(),[](auto p){return p.second;});
 }
 
-dkgen::core::particle_definition::particle_definition(int pdgc, double m, double lt) :
+dkgen::core::particle_definition::particle_definition(int pdgc, double m, double lt, bool scj) :
   pdg_code{pdgc},
   m{m},
-  ltime{lt}
+  ltime{lt},
+  self_conjugate(scj)
 {
   if(m < 0.) {
     throw std::runtime_error("Negative particle mass");
