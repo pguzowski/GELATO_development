@@ -6,6 +6,20 @@
 
 
 dkgen::core::particle_history& dkgen::core::particle_history::build_hierarchy(std::unique_ptr<decaying_particle_info>&& p) {
+  // first make sure p is not a descendent of current parent,
+  // otherwise it will be deleted when current parent is reassigned and destructed
+  decaying_particle_info_ptr curr = p.get();
+  if(curr == parent.get()) return *this;
+  while(curr != nullptr) {
+    if(curr == parent.get()) {
+      break;
+    }
+    curr = curr->get_parent();
+  }
+  if(curr != nullptr) {
+    // not implemented
+    throw std::runtime_error("particle_history::build_hierarchy: trying to add daughter of current parent. This shouldn't happen with unique_ptrs");
+  }
   parent = std::move(p);
   if(parent) {
     event_counter++;

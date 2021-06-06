@@ -33,8 +33,8 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
 
   // implement queue as std::vector that grows
   // (not too worried about memory size, but worried about timing)
-  std::vector<decaying_particle_info_ptr> queue_to_decay;
-  queue_to_decay.reserve(50);
+  static std::vector<decaying_particle_info_ptr> queue_to_decay(50);
+  queue_to_decay.clear();
   std::vector<decaying_particle_info_ptr> pure_final_states;
 
   // mutli stage process, will have to refactor into multiple functions
@@ -209,14 +209,6 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
     pure_final_states.push_back(parent);
   }
 
-  struct daughter_info {
-    int pdg;
-    fourvector momentum;
-    bool final_state;
-  };
-  std::vector<daughter_info> daughters;
-  daughters.reserve(dm.daughters.size());
-
   auto twobody_decay_momentum_in_com_frame = [](double parent_mass, double m1, double m2) -> double {
     return std::sqrt((parent_mass+m1+m2)*(parent_mass-m1-m2)*(parent_mass+m1-m2)*(parent_mass-m1+m2))/(2.*parent_mass);
   };
@@ -253,8 +245,18 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
     p2.boost(parent->decay_momentum().get_boost_vector());
 #endif
 
-    daughters.push_back({sign_flip ? d1.antipdg() : d1.pdg(), p1, dm.daughters[0].second});
-    daughters.push_back({sign_flip ? d2.antipdg() : d2.pdg(), p2, dm.daughters[1].second});
+    parent->add_child(std::make_unique<decaying_particle_info>(
+          parent, sign_flip ? d1.antipdg() : d1.pdg(), 
+          parent->decay_position(), std::move(p1),
+          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
+          ));
+    queue.push_back(parent->get_children().back().get());
+    parent->add_child(std::make_unique<decaying_particle_info>(
+          parent, sign_flip ? d2.antipdg() : d2.pdg(), 
+          parent->decay_position(), std::move(p2),
+          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
+          ));
+    queue.push_back(parent->get_children().back().get());
 
   }
   else if(dm.daughters.size() == 3) {
@@ -348,25 +350,27 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
     p3.boost(parent->decay_momentum().get_boost_vector());
 #endif
 
-    daughters.push_back({sign_flip * dm.daughters[0].first, p1, dm.daughters[0].second});
-    daughters.push_back({sign_flip * dm.daughters[1].first, p2, dm.daughters[1].second});
-    daughters.push_back({sign_flip * dm.daughters[2].first, p3, dm.daughters[2].second});
-
+    parent->add_child(std::make_unique<decaying_particle_info>(
+          parent, sign_flip ? d1.antipdg() : d1.pdg(), 
+          parent->decay_position(), std::move(p1),
+          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
+          ));
+    queue.push_back(parent->get_children().back().get());
+    parent->add_child(std::make_unique<decaying_particle_info>(
+          parent, sign_flip ? d2.antipdg() : d2.pdg(), 
+          parent->decay_position(), std::move(p2),
+          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
+          ));
+    queue.push_back(parent->get_children().back().get());
+    parent->add_child(std::make_unique<decaying_particle_info>(
+          parent, sign_flip ? d3.antipdg() : d3.pdg(), 
+          parent->decay_position(), std::move(p3),
+          dm.daughters[2].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
+          ));
+    queue.push_back(parent->get_children().back().get());
   }
   else {
     throw std::runtime_error("4+ body decays are not implemented");
   }
 
-
-  for(auto& d : daughters) {
-    const int pdg = d.pdg;
-    const fourvector& momentum = d.momentum;
-    const bool is_final_state = d.final_state;
-    parent->add_child(std::make_unique<decaying_particle_info>(
-          parent, pdg, 
-          parent->decay_position(), momentum,
-          is_final_state ? decaying_particle_info::final_state : decaying_particle_info::non_final
-          ));
-    queue.push_back(parent->get_children().back().get());
-  }
 }
