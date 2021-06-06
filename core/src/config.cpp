@@ -1,7 +1,6 @@
 #include "dkgen/core/config.hpp"
 
 #include <stdexcept>
-#include <limits>
 
 #ifdef XUSING_ROOT
 #include <TDatabasePDG.h>
@@ -48,7 +47,7 @@ dkgen::core::config& dkgen::core::config::fix_system_of_units(system_of_units sy
         {"kaon_0L", { 130, 0.497648,        51.16 }},
         {"pion_pm", { 211, 0.13957061,      26.03 }},
         {"pion_0",  { 111, 0.1349770,       8.43e-8 }},
-        {"elec",    {  11, 0.5109989461e-3, std::numeric_limits<double>::infinity() }}, 
+        {"elec",    {  11, 0.5109989461e-3, -1. }}, 
         {"muon",    {  13, 0.1056583745,    2197. }},
         {"top",     {   6, 172.9,           0. }},
       };

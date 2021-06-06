@@ -54,12 +54,13 @@ namespace dkgen {
             / (8.*M_PI*higgs_vev*higgs_vev)
             * std::pow(1.-4.*daughter_mass*daughter_mass/scalar_mass/scalar_mass,1.5);
         };
+        // don't forget about the x2 multiplicity factor for charged pions (later on)
         auto decay_rate_to_pions = [&scalar_mass, &theta, &higgs_vev](double daughter_mass) -> double {
-            const double g = 2.*scalar_mass*scalar_mass/9. + 11.*daughter_mass*daughter_mass/9.;
-            return
-              theta*theta * 3.*g*g
-              / (32.*M_PI*higgs_vev*higgs_vev*scalar_mass)
-              * std::sqrt(1.-4.*daughter_mass*daughter_mass/scalar_mass/scalar_mass);
+          const double g = 2.*scalar_mass*scalar_mass/9. + 11.*daughter_mass*daughter_mass/9.;
+          return
+            theta*theta * 3.*g*g
+            / (32.*M_PI*higgs_vev*higgs_vev*scalar_mass)
+            * std::sqrt(1.-4.*daughter_mass*daughter_mass/scalar_mass/scalar_mass);
         };
 
         double total_decay_rate = 0.;
@@ -73,17 +74,24 @@ namespace dkgen {
           total_decay_rate += decay_rate_to_pions(pion_0_mass);
         }
         if(scalar_mass > 2*pion_pm_mass) {
-          total_decay_rate += decay_rate_to_pions(pion_pm_mass);
+          total_decay_rate += 2.*decay_rate_to_pions(pion_pm_mass); // x2 for non-identical final states
         }
         const double scalar_lifetime = hbar / total_decay_rate;
 
         const bool self_conjugate = true;
+        if(scalar_mass + pion_pm_mass < kaon_pm_mass) {
         ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt}
             .add_decay({1.,{{pion_pm_pdg,true},{scalar_pdg,false}}})
             .finalise_decay_table());
+        }
+        if(scalar_mass + pion_0_mass < kaon_0L_mass) {
         ret.push_back(dkgen::core::particle_definition{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt,self_conjugate}
             .add_decay({1.,{{pion_0_pdg,true},{scalar_pdg,false}}})
             .finalise_decay_table());
+        }
+        if(scalar_mass + pion_pm_mass >= kaon_pm_mass || scalar_mass + pion_0_mass >= kaon_0L_mass) {
+          throw std::runtime_error("scalar mass is to heavy to produce in kaon decays!");
+        }
 
         ret.push_back(dkgen::core::particle_definition{scalar_pdg, scalar_mass, scalar_lifetime, self_conjugate});
         auto& scalar_info = ret.back();
@@ -105,7 +113,8 @@ namespace dkgen {
         }
         if(scalar_mass > 2*pion_pm_mass) {
           scalar_info.add_decay(
-              { decay_rate_to_pions(pion_pm_mass)/total_decay_rate, {{pion_pm_pdg,true},{-pion_pm_pdg,true}} }
+              // x2 for non-identical final states
+              { 2.*decay_rate_to_pions(pion_pm_mass)/total_decay_rate, {{pion_pm_pdg,true},{-pion_pm_pdg,true}} }
               );
         }
 
