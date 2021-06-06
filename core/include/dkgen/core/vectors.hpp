@@ -67,6 +67,8 @@ namespace dkgen {
         aligned_storage_type impl_storage;
         friend class fourvector;
         friend class rotation;
+        //inline const _vector3_impl_* impl() const { return (_vector3_impl_*)&impl_storage; }
+        //inline _vector3_impl_* impl() { return (_vector3_impl_*)&impl_storage; }
     };
 
     class fourvector {
@@ -134,12 +136,14 @@ namespace dkgen {
       private:
         struct _rotation_impl_;
         //using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_rotation_impl_>>;
-        using impl_ptr = std::experimental::propagate_const<_rotation_impl_*>;
-        impl_ptr impl;
+        //using impl_ptr = std::experimental::propagate_const<_rotation_impl_*>;
+        //impl_ptr impl;
         static constexpr size_t c_impl_size = vectors::c_rotation_impl_size;
         static constexpr size_t c_impl_alignment = std::alignment_of<double>::value;
         typedef std::aligned_storage<c_impl_size, c_impl_alignment>::type aligned_storage_type;
         aligned_storage_type impl_storage;
+        inline const _rotation_impl_* impl() const { return reinterpret_cast<const _rotation_impl_*>(&impl_storage); }
+        inline _rotation_impl_* impl() { return reinterpret_cast<_rotation_impl_*>(&impl_storage); }
     };
 
   }
