@@ -1,0 +1,11 @@
+#pragma once
+
+namespace dkgen {
+  namespace core {
+    namespace vectors {
+      static constexpr size_t c_vector3_impl_size = @PHYSICS_VECTOR3_IMPL_SIZE@;
+      static constexpr size_t c_fourvector_impl_size = @PHYSICS_FOURVECTOR_IMPL_SIZE@;
+      static constexpr size_t c_rotation_impl_size = @PHYSICS_ROTATION_IMPL_SIZE@;
+    }
+  }
+}

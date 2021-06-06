@@ -45,39 +45,80 @@ using ROTATION_CLASS = TRotation;
 
 namespace dkgen {
   namespace core {
-    struct _vector3_impl_ {
-      VECTOR3_CLASS v;
+    struct vector3::_vector3_impl_ : public VECTOR3_CLASS {
+      public:
+        using VECTOR3_CLASS::operator=;
     };
-    struct _fourvector_impl_ {
-      VECTOR4_CLASS v;
+    //  VECTOR3_CLASS v;
+    //};
+    struct fourvector::_fourvector_impl_ : public VECTOR4_CLASS {
+      public:
+        //using VECTOR4_CLASS::operator=;
     };
-    struct _rotation_impl_ {
-      ROTATION_CLASS r;
+    //  VECTOR4_CLASS v;
+    //};
+    struct rotation::_rotation_impl_ : public ROTATION_CLASS {
+      public:
+        using ROTATION_CLASS::operator=;
     };
+    //  ROTATION_CLASS r;
+    //};
   }
 }
 
 
-dkgen::core::vector3::vector3() : impl{std::make_unique<_vector3_impl_>()} {}
+dkgen::core::vector3::vector3() : impl{
+  //std::make_unique<_vector3_impl_>()
+  //std::unique_ptr<_vector3_impl_>(new (&impl_storage) _vector3_impl_ )
+  new (&impl_storage) _vector3_impl_ 
+} {
+  static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
+  static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
+}
 
-dkgen::core::vector3::vector3(double x, double y, double z) : impl{std::make_unique<_vector3_impl_>()} {
+dkgen::core::vector3::vector3(double x, double y, double z) : impl{
+  //std::make_unique<_vector3_impl_>()
+  //std::unique_ptr<_vector3_impl_>(new (&impl_storage) _vector3_impl_ )
+  new (&impl_storage) _vector3_impl_ 
+} {
+  //static_assert(sizeof(_vector3_impl_) <= sizeof(impl_storage), "Size of vector3 implementation too big");
+  static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
+  static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
   set_xyz(x,y,z);
 }
 
-dkgen::core::vector3::~vector3() { }
+dkgen::core::vector3::~vector3() {
+  // no need to delete local storage, and VECTOR3_CLASS doesn't leak memory in the implementations that have been tried
+  //delete impl.get();
+}
 
-dkgen::core::vector3::vector3(const vector3& v) : impl{std::make_unique<_vector3_impl_>(*(v.impl))} {}
+dkgen::core::vector3::vector3(const vector3& v) : impl{
+  //std::make_unique<_vector3_impl_>(*(v.impl))
+  //std::unique_ptr<_vector3_impl_>(new (&impl_storage) _vector3_impl_(*(v.impl)) )
+  new (&impl_storage) _vector3_impl_(*(v.impl)) 
+} {
+  static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
+  static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
+}
 
-dkgen::core::vector3::vector3(vector3&& v) : impl{std::move(v.impl)} {
+dkgen::core::vector3::vector3(vector3&& v) : impl{
+  //std::move(v.impl)
+  //std::make_unique<_vector3_impl_>(*(v.impl))
+  //std::unique_ptr<_vector3_impl_>(new (&impl_storage) _vector3_impl_(*(v.impl)) )
+  new (&impl_storage) _vector3_impl_(*(v.impl)) 
+} {
+  static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
+  static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
 }
 
 dkgen::core::vector3& dkgen::core::vector3::operator=(const dkgen::core::vector3& v) {
-  impl->v = v.impl->v;
+  *impl = *v.impl;
   return *this;
 }
 
 dkgen::core::vector3& dkgen::core::vector3::operator=(dkgen::core::vector3&& v) {
-  impl = std::move(v.impl);
+  //impl = std::move(v.impl);
+  *impl = *v.impl;
   return *this;
 }
 
@@ -102,63 +143,63 @@ dkgen::core::vector3 operator*(double a, const dkgen::core::vector3& b) {
 
 double dkgen::core::vector3::mag() const {
 #ifdef USING_CLHEP
-  return impl->v.mag();
+  return impl->mag();
 #elif defined(USING_ROOT)
-  return impl->v.Mag();
+  return impl->Mag();
 #endif
 }
 
 dkgen::core::vector3& dkgen::core::vector3::set_mag(double m) {
 #ifdef USING_CLHEP
-  impl->v.setMag(m);
+  impl->setMag(m);
 #elif defined(USING_ROOT)
-  impl->v.SetMag(m);
+  impl->SetMag(m);
 #endif
   return *this;
 }
 
 dkgen::core::vector3& dkgen::core::vector3::set_xyz(double x, double y, double z) {
 #ifdef USING_CLHEP
-  impl->v.set(x,y,z);
+  impl->set(x,y,z);
 #elif defined(USING_ROOT)
-  impl->v.SetXYZ(x,y,z);
+  impl->SetXYZ(x,y,z);
 #endif
   return *this;
 }
 
 double dkgen::core::vector3::x() const {
 #ifdef USING_CLHEP
-  return impl->v.x();
+  return impl->x();
 #elif defined USING_ROOT
-  return impl->v.X();
+  return impl->X();
 #endif
 }
 
 double dkgen::core::vector3::y() const {
 #ifdef USING_CLHEP
-  return impl->v.y();
+  return impl->y();
 #elif defined USING_ROOT
-  return impl->v.Y();
+  return impl->Y();
 #endif
 }
 
 double dkgen::core::vector3::z() const {
 #ifdef USING_CLHEP
-  return impl->v.z();
+  return impl->z();
 #elif defined USING_ROOT
-  return impl->v.Z();
+  return impl->Z();
 #endif
 }
 
 dkgen::core::vector3 dkgen::core::vector3::operator-(const dkgen::core::vector3& v2) const {
   vector3 ret(*this);
-  ret.impl->v -= v2.impl->v;
+  *ret.impl -= *v2.impl;
   return ret;
 }
 
 dkgen::core::vector3 dkgen::core::vector3::operator+(const dkgen::core::vector3& v2) const {
   vector3 ret(*this);
-  ret.impl->v += v2.impl->v;
+  *ret.impl += *v2.impl;
   return ret;
 }
 
@@ -171,153 +212,176 @@ dkgen::core::vector3 dkgen::core::vector3::operator+(const dkgen::core::vector3&
 
 
 
-dkgen::core::fourvector::fourvector() : impl{std::make_unique<_fourvector_impl_>()} {}
+dkgen::core::fourvector::fourvector() : impl{
+  //std::make_unique<_fourvector_impl_>()
+  new (&impl_storage) _fourvector_impl_
+} {
+  static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
+  static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
+}
 
-dkgen::core::fourvector::fourvector(double x, double y, double z, double t) : impl{std::make_unique<_fourvector_impl_>()} {
+dkgen::core::fourvector::fourvector(double x, double y, double z, double t) : impl{
+  //std::make_unique<_fourvector_impl_>()
+  new (&impl_storage) _fourvector_impl_
+} {
+  static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
+  static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
   set_xyzt(x,y,z,t);
 }
 
 dkgen::core::fourvector::~fourvector() { }
 
-dkgen::core::fourvector::fourvector(const dkgen::core::fourvector& v) : impl{std::make_unique<_fourvector_impl_>(*(v.impl))} {}
+dkgen::core::fourvector::fourvector(const dkgen::core::fourvector& v) : impl{
+  //std::make_unique<_fourvector_impl_>(*(v.impl))
+  new (&impl_storage) _fourvector_impl_(*(v.impl))
+} {
+  static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
+  static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
+}
 
-dkgen::core::fourvector::fourvector(dkgen::core::fourvector&& v) : impl{std::move(v.impl)} {
+dkgen::core::fourvector::fourvector(dkgen::core::fourvector&& v) : impl{
+  //std::move(v.impl)
+  new (&impl_storage) _fourvector_impl_(*(v.impl))
+} {
+  static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
+  static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
 }
 
 dkgen::core::fourvector& dkgen::core::fourvector::operator=(const dkgen::core::fourvector& v) {
-  impl->v = v.impl->v;
+  *impl = *v.impl;
   return *this;
 }
 
 dkgen::core::fourvector& dkgen::core::fourvector::operator=(dkgen::core::fourvector&& v) {
-  impl = std::move(v.impl);
+  //impl = std::move(v.impl);
+  *impl = *v.impl;
   return *this;
 }
 
 dkgen::core::fourvector& dkgen::core::fourvector::set_xyzt(double x, double y, double z, double t) {
 #ifdef USING_CLHEP
-  impl->v.set(x,y,z,t);
+  impl->set(x,y,z,t);
 #elif defined USING_ROOT
-  impl->v.SetXYZT(x,y,z,t);
+  impl->SetXYZT(x,y,z,t);
 #endif
   return *this;
 }
 
 dkgen::core::fourvector& dkgen::core::fourvector::set_t(double t) {
 #ifdef USING_CLHEP
-  impl->v.setT(t);
+  impl->setT(t);
 #elif defined USING_ROOT
-  impl->v.SetT(t);
+  impl->SetT(t);
 #endif
   return *this;
 }
 
 double dkgen::core::fourvector::x() const {
 #ifdef USING_CLHEP
-  return impl->v.x();
+  return impl->x();
 #elif defined USING_ROOT
-  return impl->v.X();
+  return impl->X();
 #endif
 }
 
 double dkgen::core::fourvector::y() const {
 #ifdef USING_CLHEP
-  return impl->v.y();
+  return impl->y();
 #elif defined USING_ROOT
-  return impl->v.Y();
+  return impl->Y();
 #endif
 }
 
 double dkgen::core::fourvector::z() const {
 #ifdef USING_CLHEP
-  return impl->v.z();
+  return impl->z();
 #elif defined USING_ROOT
-  return impl->v.Z();
+  return impl->Z();
 #endif
 }
 
 double dkgen::core::fourvector::t() const {
 #ifdef USING_CLHEP
-  return impl->v.t();
+  return impl->t();
 #elif defined USING_ROOT
-  return impl->v.T();
+  return impl->T();
 #endif
 }
 
 double dkgen::core::fourvector::px() const {
 #ifdef USING_CLHEP
-  return impl->v.px();
+  return impl->px();
 #elif defined USING_ROOT
-  return impl->v.Px();
+  return impl->Px();
 #endif
 }
 
 double dkgen::core::fourvector::py() const {
 #ifdef USING_CLHEP
-  return impl->v.py();
+  return impl->py();
 #elif defined USING_ROOT
-  return impl->v.Py();
+  return impl->Py();
 #endif
 }
 
 double dkgen::core::fourvector::pz() const {
 #ifdef USING_CLHEP
-  return impl->v.pz();
+  return impl->pz();
 #elif defined USING_ROOT
-  return impl->v.Pz();
+  return impl->Pz();
 #endif
 }
 
 double dkgen::core::fourvector::e() const {
 #ifdef USING_CLHEP
-  return impl->v.e();
+  return impl->e();
 #elif defined USING_ROOT
-  return impl->v.E();
+  return impl->E();
 #endif
 }
 
 dkgen::core::fourvector& dkgen::core::fourvector::set_mass_momentum_theta_phi(double m, double mom, double t, double p) {
 #ifdef USING_CLHEP
-  impl->v.setVectM({mom*std::sin(t)*std::cos(p), mom*std::sin(t)*std::sin(p), mom*std::cos(t)},m);
+  impl->setVectM({mom*std::sin(t)*std::cos(p), mom*std::sin(t)*std::sin(p), mom*std::cos(t)},m);
 #elif defined USING_ROOT
-  impl->v.SetVectM({mom*std::sin(t)*std::cos(p), mom*std::sin(t)*std::sin(p), mom*std::cos(t)},m);
+  impl->SetVectM({mom*std::sin(t)*std::cos(p), mom*std::sin(t)*std::sin(p), mom*std::cos(t)},m);
 #endif
   return *this;
 }
 
 double dkgen::core::fourvector::m() const {
 #ifdef USING_CLHEP
-  return impl->v.m();
+  return impl->m();
 #elif defined USING_ROOT
-  return impl->v.M();
+  return impl->M();
 #endif
 }
 
 double dkgen::core::fourvector::m2() const {
 #ifdef USING_CLHEP
-  return impl->v.m2();
+  return impl->m2();
 #elif defined USING_ROOT
-  return impl->v.M2();
+  return impl->M2();
 #endif
 }
 
 dkgen::core::vector3 dkgen::core::fourvector::vect() const {
   vector3 ret;
 #ifdef USING_CLHEP
-  ret.impl->v = impl->v.vect();
+  *ret.impl = impl->vect();
 #elif defined USING_ROOT
-  ret.impl->v = impl->v.Vect();
+  *ret.impl = impl->Vect();
 #endif
   return ret;
 }
 
 dkgen::core::fourvector& dkgen::core::fourvector::set_vec_time(const dkgen::core::vector3& vec, double time)  {
 #ifdef USING_CLHEP
-  impl->v.setVect(vec.impl->v);
-  impl->v.setT(time);
+  impl->setVect(*vec.impl);
+  impl->setT(time);
 #elif defined USING_ROOT
-  impl->v.SetVect(vec.impl->v);
-  impl->v.SetT(time);
+  impl->SetVect(*vec.impl);
+  impl->SetT(time);
 #endif
   return *this;
 }
@@ -326,40 +390,40 @@ dkgen::core::fourvector& dkgen::core::fourvector::set_vec_time(const dkgen::core
 dkgen::core::vector3 dkgen::core::fourvector::get_boost_vector() const {
   vector3 ret;
 #ifdef USING_CLHEP
-  ret.impl->v = impl->v.boostVector();
+  *ret.impl = impl->boostVector();
 #elif defined USING_ROOT
-  ret.impl->v = impl->v.BoostVector();
+  *ret.impl = impl->BoostVector();
 #endif
   return ret;
 }
 
 dkgen::core::fourvector& dkgen::core::fourvector::boost(const dkgen::core::vector3& bv) {
 #ifdef USING_CLHEP
-  impl->v.boost(bv.impl->v);
+  impl->boost(*bv.impl);
 #elif defined USING_ROOT
-  impl->v.Boost(bv.impl->v);
+  impl->Boost(*bv.impl);
 #endif
   return *this;
 }
 
 double dkgen::core::fourvector::beta() const {
 #ifdef USING_CLHEP
-  return impl->v.beta();
+  return impl->beta();
 #elif defined USING_ROOT
-  return impl->v.Beta();
+  return impl->Beta();
 #endif
 }
 
 
 dkgen::core::fourvector dkgen::core::fourvector::operator-(const dkgen::core::fourvector& v2) const {
   fourvector ret(*this);
-  ret.impl->v -= v2.impl->v;
+  *ret.impl -= *v2.impl;
   return ret;
 }
 
 dkgen::core::fourvector dkgen::core::fourvector::operator+(const dkgen::core::fourvector& v2) const {
   fourvector ret(*this);
-  ret.impl->v += v2.impl->v;
+  *ret.impl += *v2.impl;
   return ret;
 }
 
@@ -373,36 +437,54 @@ dkgen::core::fourvector dkgen::core::fourvector::operator+(const dkgen::core::fo
 
 
 
-dkgen::core::rotation::rotation() : impl{std::make_unique<_rotation_impl_>()} {}
+dkgen::core::rotation::rotation() : impl{
+  //std::make_unique<_rotation_impl_>()
+  new (&impl_storage) _rotation_impl_
+} {
+  static_assert(sizeof(_rotation_impl_) <= c_impl_size, "Size of rotation implementation too big");
+  static_assert(alignof(_rotation_impl_) == c_impl_alignment, "Wrong alignment of rotation implementation");
+}
 
 dkgen::core::rotation::~rotation() { }
 
-dkgen::core::rotation::rotation(const dkgen::core::rotation& r) : impl{std::make_unique<_rotation_impl_>(*(r.impl))} {}
+dkgen::core::rotation::rotation(const dkgen::core::rotation& r) : impl{
+  //std::make_unique<_rotation_impl_>(*(r.impl))
+  new (&impl_storage) _rotation_impl_(*(r.impl))
+} {
+  static_assert(sizeof(_rotation_impl_) <= c_impl_size, "Size of rotation implementation too big");
+  static_assert(alignof(_rotation_impl_) == c_impl_alignment, "Wrong alignment of rotation implementation");
+}
 
-dkgen::core::rotation::rotation(dkgen::core::rotation&& r) : impl{std::move(r.impl)} {
+dkgen::core::rotation::rotation(dkgen::core::rotation&& r) : impl{
+  //std::move(r.impl)
+  new (&impl_storage) _rotation_impl_(*(r.impl))
+} {
+  static_assert(sizeof(_rotation_impl_) <= c_impl_size, "Size of rotation implementation too big");
+  static_assert(alignof(_rotation_impl_) == c_impl_alignment, "Wrong alignment of rotation implementation");
 }
 
 dkgen::core::rotation& dkgen::core::rotation::operator=(const dkgen::core::rotation& r) {
-  impl->r = r.impl->r;
+  *impl = *r.impl;
   return *this;
 }
 
 dkgen::core::rotation& dkgen::core::rotation::operator=(dkgen::core::rotation&& r) {
-  impl = std::move(r.impl);
+  //impl = std::move(r.impl);
+  *impl = *r.impl;
   return *this;
 }
 
 dkgen::core::vector3 dkgen::core::rotation::operator*(const dkgen::core::vector3& vin) const {
   dkgen::core::vector3 ret;
-  ret.impl->v = impl->r * vin.impl->v;
+  *ret.impl = *impl * *vin.impl;
   return ret;
 }
 
 dkgen::core::rotation& dkgen::core::rotation::invert() { 
 #ifdef USING_CLHEP
-  impl->r.invert();
+  impl->invert();
 #elif defined USING_ROOT
-  impl->r.Invert();
+  impl->Invert();
 #endif
   return *this;
 }
@@ -410,18 +492,18 @@ dkgen::core::rotation& dkgen::core::rotation::invert() {
 dkgen::core::rotation dkgen::core::rotation::get_inverse()  const { 
   rotation ret;
 #ifdef USING_CLHEP
-  ret.impl->r = impl->r.inverse();
+  *ret.impl = impl->inverse();
 #elif defined USING_ROOT
-  ret.impl->r = impl->r.Inverse();
+  *ret.impl = impl->Inverse();
 #endif
   return ret;
 }
 
 dkgen::core::rotation& dkgen::core::rotation::rotate_axes(const dkgen::core::vector3& new_x, const dkgen::core::vector3& new_y, const dkgen::core::vector3& new_z) {
 #ifdef USING_CLHEP
-  impl->r.rotateAxes(new_x.impl->v, new_y.impl->v, new_z.impl->v);
+  impl->rotateAxes(*new_x.impl, *new_y.impl, *new_z.impl);
 #elif defined USING_ROOT
-  impl->r.RotateAxes(new_x.impl->v, new_y.impl->v, new_z.impl->v);
+  impl->RotateAxes(*new_x.impl, *new_y.impl, *new_z.impl);
 #endif
   return *this;
 }

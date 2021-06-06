@@ -4,7 +4,7 @@
 #ifdef EXPOSE_PHYSICS_VECTORS
 
 #ifndef USING_CLHEP
-#error "Need to set USE_CLHEP flag"
+#error "Need to set USING_CLHEP flag"
 #endif
 
 #include <CLHEP/Vector/ThreeVector.h>
@@ -14,11 +14,6 @@ namespace dkgen {
   namespace core {
     using vector3 = CLHEP::Hep3Vector;
     using fourvector = CLHEP::HepLorentzVector;
-//#define set_t setT
-//#define set_vec_time(v,t) set(v,t) 
-//#define set_mass_momentum_theta_phi(m,mm,t,p) setVectM(vector3{mm*std::sin(t)*std::cos(p),mm*std::sin(t)*std::sin(p),mm*std::cos(t)},m)
-//#define get_boost_vector boostVector
-//#define get_inverse inverse
     using rotation = CLHEP::HepRotation;
   }
 }
@@ -35,13 +30,12 @@ namespace dkgen {
 #include <memory>
 #include <experimental/propagate_const>
 
+#include "dkgen/core/physics_vector_sizes.hpp"
+
 namespace dkgen {
   namespace core {
-    struct _vector3_impl_;
     class vector3 {
       public:
-        using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_vector3_impl_>>;
-
         vector3();
         vector3(double x, double y, double z);
         ~vector3();
@@ -63,16 +57,20 @@ namespace dkgen {
         vector3 operator-(const vector3& v) const;
         vector3 operator+(const vector3& v) const;
       private:
+        struct _vector3_impl_;
+        //using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_vector3_impl_>>;
+        using impl_ptr = std::experimental::propagate_const<_vector3_impl_*>;
         impl_ptr impl;
+        static constexpr size_t c_impl_size = vectors::c_vector3_impl_size;
+        static constexpr size_t c_impl_alignment = std::alignment_of<double>::value;
+        typedef std::aligned_storage<c_impl_size, c_impl_alignment>::type aligned_storage_type;
+        aligned_storage_type impl_storage;
         friend class fourvector;
         friend class rotation;
     };
 
-    struct _fourvector_impl_;
     class fourvector {
       public:
-        using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_fourvector_impl_>>;
-
         fourvector();
         ~fourvector();
         fourvector(double x, double y, double z, double t);
@@ -108,14 +106,18 @@ namespace dkgen {
         fourvector operator+(const fourvector& v2) const;
         fourvector operator-(const fourvector& v2) const;
       private:
+        struct _fourvector_impl_;
+        //using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_fourvector_impl_>>;
+        using impl_ptr = std::experimental::propagate_const<_fourvector_impl_*>;
         impl_ptr impl;
+        static constexpr size_t c_impl_size = vectors::c_fourvector_impl_size;
+        static constexpr size_t c_impl_alignment = std::alignment_of<double>::value;
+        typedef std::aligned_storage<c_impl_size, c_impl_alignment>::type aligned_storage_type;
+        aligned_storage_type impl_storage;
     };
 
-    struct _rotation_impl_;
     class rotation {
       public:
-        using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_rotation_impl_>>;
-
         rotation();
         ~rotation();
         rotation(const rotation&);
@@ -130,7 +132,14 @@ namespace dkgen {
         rotation& invert();
         rotation get_inverse() const;
       private:
+        struct _rotation_impl_;
+        //using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_rotation_impl_>>;
+        using impl_ptr = std::experimental::propagate_const<_rotation_impl_*>;
         impl_ptr impl;
+        static constexpr size_t c_impl_size = vectors::c_rotation_impl_size;
+        static constexpr size_t c_impl_alignment = std::alignment_of<double>::value;
+        typedef std::aligned_storage<c_impl_size, c_impl_alignment>::type aligned_storage_type;
+        aligned_storage_type impl_storage;
     };
 
   }
