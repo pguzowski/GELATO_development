@@ -32,12 +32,12 @@ int main(int argc, char** argv) {
 
   driver.add_particle_definition(
       dkgen::core::particle_definition{1,100.,1e3}
-      .add_decay({1.,{{2,false},{3,false}}})
+      .add_decay({1.,{{-2,false},{-3,false}}})
       .finalise_decay_table()
       );
   
   driver.add_particle_definition(
-      dkgen::core::particle_definition{2,80.,.4e3}
+      dkgen::core::particle_definition{-2,80.,.4e3}
       .add_decay({1.,{{11,true},{-11,true}}})
       .finalise_decay_table()
       );
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   else {
     driver.add_particle_definition(
         dkgen::core::particle_definition{3,15.,.2e3}
-        .add_decay({1.,{{13,true},{-13,true},{11,true}}}) // no reweight
+        .add_decay({1.,{{13,true},{-13,true},{-11,true}}}) // no reweight
         .finalise_decay_table()
         );
   }

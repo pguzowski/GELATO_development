@@ -177,7 +177,7 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
 const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int pdg) const {
   auto p = std::lower_bound(particle_content.begin(), particle_content.end(), std::abs(pdg),
       [](auto& a, int find_pdg) { return std::abs(a.pdg()) < find_pdg; } );
-  if (p == particle_content.end() || p->pdg() != std::abs(pdg)) {
+  if (p == particle_content.end() || std::abs(p->pdg()) != std::abs(pdg)) {
     throw std::runtime_error("Undefined particle requested! PDG code "+std::to_string(pdg));
   }
   return *p;
@@ -216,9 +216,18 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
   // need to flip signs of daughters if parent decay was antiparticle
   const bool sign_flip = (parent->pdg() != parent_particle_info.pdg()) ? true : false;
 
+
+  auto add_new_daughter_to_queue = [&parent, &queue](int pdgc, const fourvector& pos,
+      fourvector&& mom, auto fs) {
+    parent->add_child(std::make_unique<decaying_particle_info>(parent, pdgc, pos, std::move(mom), fs));
+    queue.push_back(parent->get_children().back().get());
+  };
+
   if(dm.daughters.size() == 2) {
     auto const& d1 = find_particle(dm.daughters[0].first);
     auto const& d2 = find_particle(dm.daughters[1].first);
+    const bool sign_flip1 = (d1.pdg() != dm.daughters[0].first) ? true : false;
+    const bool sign_flip2 = (d2.pdg() != dm.daughters[1].first) ? true : false;
     const double m1 = d1.mass();
     const double m2 = d2.mass();
     const double cos_theta_cm = 1.-2.*rng();
@@ -245,24 +254,19 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
     p2.boost(parent->decay_momentum().get_boost_vector());
 #endif
 
-    parent->add_child(std::make_unique<decaying_particle_info>(
-          parent, sign_flip ? d1.antipdg() : d1.pdg(), 
-          parent->decay_position(), std::move(p1),
-          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
-          ));
-    queue.push_back(parent->get_children().back().get());
-    parent->add_child(std::make_unique<decaying_particle_info>(
-          parent, sign_flip ? d2.antipdg() : d2.pdg(), 
-          parent->decay_position(), std::move(p2),
-          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
-          ));
-    queue.push_back(parent->get_children().back().get());
+    add_new_daughter_to_queue(sign_flip ^ sign_flip1 ? d1.antipdg() : d1.pdg(), parent->decay_position(), std::move(p1),
+          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+    add_new_daughter_to_queue(sign_flip ^ sign_flip2 ? d2.antipdg() : d2.pdg(), parent->decay_position(), std::move(p2),
+          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
 
   }
   else if(dm.daughters.size() == 3) {
     auto const& d1 = find_particle(dm.daughters[0].first);
     auto const& d2 = find_particle(dm.daughters[1].first);
     auto const& d3 = find_particle(dm.daughters[2].first);
+    const bool sign_flip1 = (d1.pdg() != dm.daughters[0].first) ? true : false;
+    const bool sign_flip2 = (d2.pdg() != dm.daughters[1].first) ? true : false;
+    const bool sign_flip3 = (d3.pdg() != dm.daughters[2].first) ? true : false;
 
     const double m1 = d1.mass();
     const double m2 = d2.mass();
@@ -350,24 +354,12 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
     p3.boost(parent->decay_momentum().get_boost_vector());
 #endif
 
-    parent->add_child(std::make_unique<decaying_particle_info>(
-          parent, sign_flip ? d1.antipdg() : d1.pdg(), 
-          parent->decay_position(), std::move(p1),
-          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
-          ));
-    queue.push_back(parent->get_children().back().get());
-    parent->add_child(std::make_unique<decaying_particle_info>(
-          parent, sign_flip ? d2.antipdg() : d2.pdg(), 
-          parent->decay_position(), std::move(p2),
-          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
-          ));
-    queue.push_back(parent->get_children().back().get());
-    parent->add_child(std::make_unique<decaying_particle_info>(
-          parent, sign_flip ? d3.antipdg() : d3.pdg(), 
-          parent->decay_position(), std::move(p3),
-          dm.daughters[2].second ? decaying_particle_info::final_state : decaying_particle_info::non_final
-          ));
-    queue.push_back(parent->get_children().back().get());
+    add_new_daughter_to_queue(sign_flip ^ sign_flip1 ? d1.antipdg() : d1.pdg(), parent->decay_position(), std::move(p1),
+          dm.daughters[0].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+    add_new_daughter_to_queue(sign_flip ^ sign_flip2 ? d2.antipdg() : d2.pdg(), parent->decay_position(), std::move(p2),
+          dm.daughters[1].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
+    add_new_daughter_to_queue(sign_flip ^ sign_flip3 ? d3.antipdg() : d3.pdg(), parent->decay_position(), std::move(p3),
+          dm.daughters[2].second ? decaying_particle_info::final_state : decaying_particle_info::non_final);
   }
   else {
     throw std::runtime_error("4+ body decays are not implemented");
