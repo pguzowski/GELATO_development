@@ -4,11 +4,6 @@
 
 #include "dkgen/core/decaying_particle_info.hpp"
 
-dkgen::core::particle_history::particle_history() : total_weight(1.) {
-}
-
-dkgen::core::particle_history::~particle_history() {
-}
 
 dkgen::core::particle_history& dkgen::core::particle_history::build_hierarchy(std::unique_ptr<decaying_particle_info>&& p) {
   parent = std::move(p);

@@ -28,7 +28,7 @@ namespace dkgen {
 // need to investigate speedups
 
 #include <memory>
-#include <experimental/propagate_const>
+//#include <experimental/propagate_const>
 
 #include "dkgen/core/physics_vector_sizes.hpp"
 
@@ -59,14 +59,15 @@ namespace dkgen {
       private:
         struct _vector3_impl_;
         //using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_vector3_impl_>>;
-        using impl_ptr = std::experimental::propagate_const<_vector3_impl_*>;
-        impl_ptr impl;
+        //using impl_ptr = std::experimental::propagate_const<_vector3_impl_*>;
+        //impl_ptr impl;
         static constexpr size_t c_impl_size = vectors::c_vector3_impl_size;
         static constexpr size_t c_impl_alignment = std::alignment_of<double>::value;
         typedef std::aligned_storage<c_impl_size, c_impl_alignment>::type aligned_storage_type;
         aligned_storage_type impl_storage;
         friend class fourvector;
         friend class rotation;
+        _vector3_impl_* impl;
         //inline const _vector3_impl_* impl() const { return (_vector3_impl_*)&impl_storage; }
         //inline _vector3_impl_* impl() { return (_vector3_impl_*)&impl_storage; }
     };
@@ -110,12 +111,15 @@ namespace dkgen {
       private:
         struct _fourvector_impl_;
         //using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_fourvector_impl_>>;
-        using impl_ptr = std::experimental::propagate_const<_fourvector_impl_*>;
-        impl_ptr impl;
+        //using impl_ptr = std::experimental::propagate_const<_fourvector_impl_*>;
+        //impl_ptr impl;
         static constexpr size_t c_impl_size = vectors::c_fourvector_impl_size;
         static constexpr size_t c_impl_alignment = std::alignment_of<double>::value;
         typedef std::aligned_storage<c_impl_size, c_impl_alignment>::type aligned_storage_type;
         aligned_storage_type impl_storage;
+        _fourvector_impl_ *impl;
+        //inline const _fourvector_impl_* impl() const { return reinterpret_cast<const _fourvector_impl_*>(&impl_storage); }
+        //inline _fourvector_impl_* impl() { return reinterpret_cast<_fourvector_impl_*>(&impl_storage); }
     };
 
     class rotation {
@@ -142,8 +146,9 @@ namespace dkgen {
         static constexpr size_t c_impl_alignment = std::alignment_of<double>::value;
         typedef std::aligned_storage<c_impl_size, c_impl_alignment>::type aligned_storage_type;
         aligned_storage_type impl_storage;
-        inline const _rotation_impl_* impl() const { return reinterpret_cast<const _rotation_impl_*>(&impl_storage); }
-        inline _rotation_impl_* impl() { return reinterpret_cast<_rotation_impl_*>(&impl_storage); }
+        _rotation_impl_ *impl;
+        //inline const _rotation_impl_* impl() const { return reinterpret_cast<const _rotation_impl_*>(&impl_storage); }
+        //inline _rotation_impl_* impl() { return reinterpret_cast<_rotation_impl_*>(&impl_storage); }
     };
 
   }

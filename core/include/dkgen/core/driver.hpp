@@ -16,8 +16,6 @@ namespace dkgen {
       public:
         using abs_particle_pdg = unsigned int;
         using particle_map = std::map<abs_particle_pdg, particle_definition>;
-        driver();
-        ~driver();
         
         driver& add_particle_definition(const particle_definition& p);
         driver& set_particle_content(const particle_map& p);

@@ -7,14 +7,9 @@ namespace dkgen {
   namespace core {
     class geometry {
       public:
-        geometry() = default;
-        ~geometry() = default;
-        geometry(const geometry&) = default;
-        geometry(geometry&&) = default;
-        geometry& operator=(const geometry&) = default;
-        geometry& operator=(geometry&&) = default;
 
-        geometry(vector3 centre, vector3 dims, rotation rot_from_detctor_to_beamline_system = rotation());
+        geometry() = default;
+        geometry(vector3 centre, vector3 dims, rotation rot_from_detctor_to_beamline_system = {});
 
         geometry& set_active_volume_centre_in_beamline_system(vector3 centre);
         geometry& set_active_volume_half_dimensions_in_detector_system(vector3 dims);

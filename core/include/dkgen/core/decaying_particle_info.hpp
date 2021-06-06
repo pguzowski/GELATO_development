@@ -26,7 +26,10 @@ namespace dkgen {
         // constructor for initial parent particle
         decaying_particle_info(int pdg, fourvector prod_pos,
             fourvector dec_pos, fourvector prod_mom, state_type state);
+
+        // need custom destructor to efficiently delete children without stack overflows in recersive functions
         ~decaying_particle_info();
+        // and because of that, have to specify these ones:
         decaying_particle_info(decaying_particle_info&&) = default;
         decaying_particle_info(const decaying_particle_info&) = delete;
         decaying_particle_info& operator=(decaying_particle_info&&) = default;

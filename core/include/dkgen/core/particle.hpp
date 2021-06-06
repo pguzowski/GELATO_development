@@ -17,25 +17,15 @@ namespace dkgen {
 
         dalitz_function() : enabled(false) {}
         dalitz_function(functype fn) : enabled(true), /*maxweight(0.),*/ func(fn) {}
-        ~dalitz_function() = default;
-        dalitz_function(const dalitz_function& f2) = default;
-        dalitz_function(dalitz_function&& f2) = default;
-        dalitz_function& operator=(const dalitz_function& f2) = default;
-        dalitz_function& operator=(dalitz_function&& f2) = default;
+        
         double operator()(inv_mass_1_2_squared m12, inv_mass_1_3_squared m13) const {
           if(!enabled) return 1.;
           double ret = func(m12, m13);
-          //if(ret < maxweight) {
-          //  throw std::runtime_error("dalitz_function: weight > max_weight (must increase max_weight)");
-          //}
           return ret;
         }
         bool is_enabled() const { return enabled; }
-        //double max_weight() const { return maxweight; }
-        //dalitz_function& set_max_weight(double mw) { maxweight = mw; return *this; }
       private:
         bool enabled;
-        //double maxweight;
         functype func;
     };
 
@@ -48,17 +38,9 @@ namespace dkgen {
       double branching_ratio;
       daughter_vector_t daughters;
       dalitz_function threebody_dalitz_reweighter;
-      //bool final_state;
-
-
-      decay_mode(double br, daughter_vector_t dgt, dalitz_function rw = dalitz_function());
 
       decay_mode() : branching_ratio(-1.) {};
-      decay_mode(const decay_mode&) = default;
-      decay_mode& operator=(const decay_mode&) = default;
-      decay_mode(decay_mode&&) = default;
-      decay_mode& operator=(decay_mode&&) = default;	
-      ~decay_mode() = default;
+      decay_mode(double br, daughter_vector_t dgt, dalitz_function rw = dalitz_function());
 
       decay_mode& set_daughters(const std::vector<std::pair<pdg_code,is_final_state>>& dgt) {
         daughters = dgt;
@@ -77,27 +59,14 @@ namespace dkgen {
         threebody_dalitz_reweighter = std::move(rw);
         return *this;
       }
-      /*
-         decay_mode& set_final_state(bool fs) {
-         final_state = fs;
-         return *this;
-         }
-         */
-
       bool is_pure_final_state() const;
       bool is_null() const { return branching_ratio < 0.; }
     };
 
     class particle_definition {
       public:
-        particle_definition(int pdgc, double m, double lt = -1.); // negative lifetime for stable or final state particles
         particle_definition() = default;
-
-        particle_definition(const particle_definition&) = default;
-        particle_definition& operator=(const particle_definition&) = default;
-        particle_definition(particle_definition&&) = default;
-        particle_definition& operator=(particle_definition&&) = default;
-        ~particle_definition() = default;
+        particle_definition(int pdgc, double m, double lt = -1.); // negative lifetime for stable or final state particles
 
         int pdg() const { return pdg_code; };
         double mass() const { return m; };

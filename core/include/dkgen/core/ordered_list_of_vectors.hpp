@@ -9,12 +9,6 @@ namespace dkgen {
   namespace core {
     class ordered_list_of_vectors {
       public:
-        ordered_list_of_vectors() = default;
-        ~ordered_list_of_vectors() = default;
-        ordered_list_of_vectors(const ordered_list_of_vectors&) = default;
-        ordered_list_of_vectors(ordered_list_of_vectors&&) = default;
-        ordered_list_of_vectors& operator=(const ordered_list_of_vectors&) = default;
-        ordered_list_of_vectors& operator=(ordered_list_of_vectors&&) = default;
         const vector3& first() const;
         const vector3& last() const;
         size_t size() const;

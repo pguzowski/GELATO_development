@@ -13,11 +13,13 @@
 #include <iostream>
 #endif
 
+/*
 dkgen::core::driver::driver() {
 }
 
 dkgen::core::driver::~driver() {
 }
+*/
 
 dkgen::core::particle_history dkgen::core::driver::generate_decays(
     dkgen::core::decaying_particle_info&& parent_meson,

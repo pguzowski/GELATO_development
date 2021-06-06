@@ -26,12 +26,7 @@ namespace dkgen {
     };
     class particle_history {
       public:
-        particle_history();
-        ~particle_history();
-        particle_history(const particle_history&) = delete;
-        particle_history(particle_history&&) = default;
-        particle_history& operator=(const particle_history&) = delete;
-        particle_history& operator=(particle_history&&) = default;
+        particle_history()  : total_weight(1.) {}
 
         double get_total_weight() const { return total_weight; };
 

@@ -16,18 +16,22 @@ endif()
 
 
 if(NOT EXPOSE_PHYSICS_VECTORS)
-  # test for <experimental/propagate_const> (C++ TS2 standard, not available in all compilers)
 
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx "#include <experimental/propagate_const>\nstd::experimental::propagate_const<int*> x;\nint main(int argc, char** argv) { return 0; }\n")
-  try_compile(RESULT_VAR ${CMAKE_CURRENT_BINARY_DIR}/test_compile ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx CXX_STANDARD 14)
-  file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx)
-  file(REMOVE_RECURSE  ${CMAKE_CURRENT_BINARY_DIR}/test_compile)
+  #[=[
 
-  if(NOT ${RESULT_VAR})
-    message(FATAL_ERROR "Compiler doesn't have std::experimental::propagate_const feature")
-  endif()
+    # test for <experimental/propagate_const> (C++ TS2 standard, not available in all compilers)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx "#include <experimental/propagate_const>\nstd::experimental::propagate_const<int*> x;\nint main(int argc, char** argv) { return 0; }\n")
+    try_compile(RESULT_VAR ${CMAKE_CURRENT_BINARY_DIR}/test_compile ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx CXX_STANDARD 14)
+    file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx)
+    file(REMOVE_RECURSE  ${CMAKE_CURRENT_BINARY_DIR}/test_compile)
 
-  # end test for <experimental/propagate_const>
+    if(NOT ${RESULT_VAR})
+      message(FATAL_ERROR "Compiler doesn't have std::experimental::propagate_const feature")
+    endif()
+
+    # end test for <experimental/propagate_const>
+
+  ]=]#
 
   # test for physics vector sizes
 
@@ -113,4 +117,7 @@ elseif(PHYSICS_BACKEND STREQUAL "ROOT")
   target_compile_definitions(dkgen PRIVATE USING_ROOT)
   target_link_libraries(dkgen PRIVATE ROOT::Physics)
 endif()
-target_include_directories(dkgen PUBLIC include "${CMAKE_CURRENT_BINARY_DIR}/include")
+target_include_directories(dkgen PUBLIC include)
+if(NOT EXPOSE_PHYSICS_VECTORS)
+  target_include_directories(dkgen PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/include")
+endif()
