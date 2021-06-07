@@ -88,6 +88,13 @@ dkgen::core::vector3::vector3(const vector3& v)  {
   impl = reinterpret_cast<_vector3_impl_*>(&impl_storage);
 }
 
+dkgen::core::vector3& dkgen::core::vector3::operator=(const vector3& v) {
+  *impl = *v.impl;
+  return *this;
+}
+
+/* No need for move semantics (all data stored locally in impl_storage)
+
 // local storage, just copy
 dkgen::core::vector3::vector3(vector3&& v) {
   static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
@@ -95,22 +102,20 @@ dkgen::core::vector3::vector3(vector3&& v) {
   new (&impl_storage) _vector3_impl_(*(v.impl)) ;
   impl = reinterpret_cast<_vector3_impl_*>(&impl_storage);
 }
-
-dkgen::core::vector3& dkgen::core::vector3::operator=(const vector3& v) {
-  *impl = *v.impl;
-  return *this;
-}
-
 // local storage, just copy
 dkgen::core::vector3& dkgen::core::vector3::operator=(vector3&& v) {
   *impl = *v.impl;
   return *this;
 }
 
+*/
+
 dkgen::core::vector3 dkgen::core::vector3::unit() const {
+  /*
   if(mag() <= 0.) {
     throw std::runtime_error("vector3: unit() requested for zero or negative length vector");
   }
+  */
   vector3 ret(*this);
   ret.set_mag(1.);
   return ret;
@@ -225,6 +230,13 @@ dkgen::core::fourvector::fourvector(const fourvector& v) {
   impl = reinterpret_cast<_fourvector_impl_*>(&impl_storage);
 }
 
+dkgen::core::fourvector& dkgen::core::fourvector::operator=(const fourvector& v) {
+  *impl = *v.impl;
+  return *this;
+}
+
+/* No need for move semantics (all data stored locally in impl_storage)
+
 // local storage, just copy
 dkgen::core::fourvector::fourvector(fourvector&& v) {
   static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
@@ -233,15 +245,11 @@ dkgen::core::fourvector::fourvector(fourvector&& v) {
   impl = reinterpret_cast<_fourvector_impl_*>(&impl_storage);
 }
 
-dkgen::core::fourvector& dkgen::core::fourvector::operator=(const fourvector& v) {
-  *impl = *v.impl;
-  return *this;
-}
-
 dkgen::core::fourvector& dkgen::core::fourvector::operator=(fourvector&& v) {
   *impl = *v.impl;
   return *this;
 }
+*/
 
 dkgen::core::fourvector& dkgen::core::fourvector::set_xyzt(double x, double y, double z, double t) {
 #ifdef USING_CLHEP
@@ -440,6 +448,13 @@ dkgen::core::rotation::rotation(const dkgen::core::rotation& r) {
   impl = reinterpret_cast<_rotation_impl_*>(&impl_storage);
 }
 
+dkgen::core::rotation& dkgen::core::rotation::operator=(const rotation& r) {
+  *impl = *r.impl;
+  return *this;
+}
+
+/* No need for move semantics (all data stored locally in impl_storage)
+
 // local storage, just copy
 dkgen::core::rotation::rotation(dkgen::core::rotation&& r) {
   static_assert(sizeof(_rotation_impl_) <= c_impl_size, "Size of rotation implementation too big");
@@ -448,16 +463,12 @@ dkgen::core::rotation::rotation(dkgen::core::rotation&& r) {
   impl = reinterpret_cast<_rotation_impl_*>(&impl_storage);
 }
 
-dkgen::core::rotation& dkgen::core::rotation::operator=(const rotation& r) {
-  *impl = *r.impl;
-  return *this;
-}
-
 // local storage, just copy
 dkgen::core::rotation& dkgen::core::rotation::operator=(rotation&& r) {
   *impl = *r.impl;
   return *this;
 }
+*/
 
 dkgen::core::vector3 dkgen::core::rotation::operator*(const vector3& vin) const {
   dkgen::core::vector3 ret;

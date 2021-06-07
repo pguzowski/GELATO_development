@@ -40,9 +40,11 @@ namespace dkgen {
         vector3(double x, double y, double z);
         ~vector3();
         vector3(const vector3&);
-        vector3(vector3&&);
         vector3& operator=(const vector3&);
+        /* No need for move semantics (all data stored locally in impl_storage)
+        vector3(vector3&&);
         vector3& operator=(vector3&&);
+        */
 
         vector3 unit() const;
         vector3 operator*(double m) const;
@@ -78,9 +80,11 @@ namespace dkgen {
         ~fourvector();
         fourvector(double x, double y, double z, double t);
         fourvector(const fourvector&);
-        fourvector(fourvector&&);
         fourvector& operator=(const fourvector&);
+        /* No need for move semantics (all data stored locally in impl_storage)
+        fourvector(fourvector&&);
         fourvector& operator=(fourvector&&);
+        */
 
         double x() const;
         double y() const;
@@ -127,9 +131,11 @@ namespace dkgen {
         rotation();
         ~rotation();
         rotation(const rotation&);
-        rotation(rotation&&);
         rotation& operator=(const rotation&);
+        /* No need for move semantics (all data stored locally in impl_storage)
         rotation& operator=(rotation&&);
+        rotation(rotation&&);
+        */
 
         vector3 operator*(const vector3& v) const;
 
