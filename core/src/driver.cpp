@@ -127,6 +127,12 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
     }
 
     bool decay_set = false;
+    if(p.lifetime() == 0.) {
+      // decay straight away
+      parent->set_decay_pos_from_tof(0., config.physical_params().speed_of_light);
+      decay_set = true;
+    }
+
     if(parent->is_pre_final_state()) {
       // we have to force the decay position to be inside the detector, if possible
 
@@ -140,7 +146,7 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
         const double u = rng();
         // conversion between 0--1 to somewhere along tof1--tof2 with exponential decay
         // argument of std::log is always positive because 0<u<1, lifetime>0,tof1<tof2 => std::exp<1
-        const double tof = tof1 - p.lifetime() * std::log(1.-u+u*std::exp((tof1-tof2)/p.lifetime()));
+        const double tof = tof1 - p.lifetime() * std::log(1.- u + u*std::exp((tof1-tof2)/p.lifetime()));
         const double weight = std::exp(-tof1/p.lifetime()) - std::exp(-tof2/p.lifetime());
         parent->set_decay_pos_from_tof(tof, config.physical_params().speed_of_light);
         parent->set_decay_weight(weight);
@@ -157,7 +163,7 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
       std::cout << "Setting non-forced decay\n";
 #endif
       const double u = rng();
-      const double tof = -p.lifetime() * std::log(1. - u);
+      const double tof = -p.lifetime() * std::log(u);
       parent->set_decay_pos_from_tof(tof, config.physical_params().speed_of_light);
     }
     for(auto& d : parent->get_children()) { // also need to update the children positions

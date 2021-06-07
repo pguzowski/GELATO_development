@@ -79,14 +79,17 @@ namespace dkgen {
         const double scalar_lifetime = hbar / total_decay_rate;
 
         const bool self_conjugate = true;
+        const bool final_state = true;
+        const bool not_final_state = !final_state;
+
         if(scalar_mass + pion_pm_mass < kaon_pm_mass) {
         ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt}
-            .add_decay({1.,{{pion_pm_pdg,true},{scalar_pdg,false}}})
+            .add_decay({1.,{{pion_pm_pdg,final_state},{scalar_pdg,not_final_state}}})
             .finalise_decay_table());
         }
         if(scalar_mass + pion_0_mass < kaon_0L_mass) {
         ret.push_back(dkgen::core::particle_definition{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt,self_conjugate}
-            .add_decay({1.,{{pion_0_pdg,true},{scalar_pdg,false}}})
+            .add_decay({1.,{{pion_0_pdg,final_state},{scalar_pdg,not_final_state}}})
             .finalise_decay_table());
         }
         if(scalar_mass + pion_pm_mass >= kaon_pm_mass || scalar_mass + pion_0_mass >= kaon_0L_mass) {
@@ -98,23 +101,23 @@ namespace dkgen {
 
         if(scalar_mass > 2*elec_mass) {
           scalar_info.add_decay(
-              { decay_rate_to_leptons(elec_mass)/total_decay_rate, {{elec_pdg,true},{-elec_pdg,true}} }
+              { decay_rate_to_leptons(elec_mass)/total_decay_rate, {{elec_pdg,final_state},{-elec_pdg,final_state}} }
               );
         }
         if(scalar_mass > 2*muon_mass) {
           scalar_info.add_decay(
-              { decay_rate_to_leptons(muon_mass)/total_decay_rate, {{muon_pdg,true},{-muon_pdg,true}} }
+              { decay_rate_to_leptons(muon_mass)/total_decay_rate, {{muon_pdg,final_state},{-muon_pdg,final_state}} }
               );
         }
         if(scalar_mass > 2*pion_0_mass) {
           scalar_info.add_decay(
-              { decay_rate_to_pions(pion_0_mass)/total_decay_rate, {{pion_0_pdg,true},{pion_0_pdg,true}} }
+              { decay_rate_to_pions(pion_0_mass)/total_decay_rate, {{pion_0_pdg,final_state},{pion_0_pdg,final_state}} }
               );
         }
         if(scalar_mass > 2*pion_pm_mass) {
           scalar_info.add_decay(
               // x2 for non-identical final states
-              { 2.*decay_rate_to_pions(pion_pm_mass)/total_decay_rate, {{pion_pm_pdg,true},{-pion_pm_pdg,true}} }
+              { 2.*decay_rate_to_pions(pion_pm_mass)/total_decay_rate, {{pion_pm_pdg,final_state},{-pion_pm_pdg,final_state}} }
               );
         }
 

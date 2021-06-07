@@ -18,8 +18,13 @@ namespace dkgen {
           double speed_of_light;
           double hbar;
           double higgs_vev;
+          double CKM_Vud;
+          double CKM_Vus;
           double CKM_Vtd;
           double CKM_Vts;
+          double gFermi;
+          double sin2thW;
+          double pion_decay_constant;
           physical_parameters() : speed_of_light(-1.) {}
           const standard_particle& find_particle(const std::string& name) const;
           private:
