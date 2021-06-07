@@ -2,11 +2,10 @@
 
 #include <algorithm>
 
-dkgen::core::decay_mode::decay_mode(double br, daughter_vector_t dgt, dalitz_function rw) :
+dkgen::core::decay_mode::decay_mode(double br, daughter_vector_t dgt) :
   branching_ratio{br},
   daughters{std::move(dgt)},
-  threebody_dalitz_reweighter{std::move(rw)}/*,
-  final_state{false}*/
+  reweighting_type{reweighter_type::none}
 {
 }
 

@@ -195,7 +195,21 @@ dkgen::core::vector3 dkgen::core::vector3::operator+(const vector3& v2) const {
   return ret;
 }
 
+double dkgen::core::vector3::dot(const vector3& v) const {
+#ifdef USING_CLHEP
+  return impl->dot(*v.impl);
+#elif defined USING_ROOT
+  return impl->Dot(*v.impl);
+#endif
+}
 
+double dkgen::core::vector3::delta_phi(const vector3& v) const {
+#ifdef USING_CLHEP
+  return impl->deltaPhi(*v.impl);
+#elif defined USING_ROOT
+  return impl->DeltaPhi(*v.impl);
+#endif
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////

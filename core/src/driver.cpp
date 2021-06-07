@@ -259,11 +259,37 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
         -decay_momentum*std::sin(std::acos(cos_theta_cm))*std::sin(phi_cm),
         -decay_momentum*cos_theta_cm
         },m2);
-    p1.boost(parent->decay_momentum().boostVector());
-    p2.boost(parent->decay_momentum().boostVector());
 #else
     p1.set_mass_momentum_theta_phi(m1,decay_momentum,std::acos(cos_theta_cm),phi_cm);
     p2.set_mass_momentum_theta_phi(m2,-decay_momentum,std::acos(cos_theta_cm),phi_cm);
+#endif
+    
+
+    // need to do the angular reweighting before boosting
+    switch(dm.reweighting_type) {
+      case decay_mode::reweighter_type::twobody:
+        {
+          const vector3 reference = ((parent->decay_momentum().vect().mag() > 0)
+              ? parent->decay_momentum().vect().unit()
+              : ((parent->get_parent() != nullptr && parent->get_parent()->decay_momentum().vect().mag() > 0)
+                ? parent->get_parent()->decay_momentum().vect().unit()
+                : vector3{0.,0.,1.} // last resort, use z-axis
+                )
+              );
+          const double costh = p1.vect().unit().dot(reference);
+          const double dalitz_weight = dm.twobody_dalitz_reweighter(costh);
+          parent->multiply_decay_weight(dalitz_weight);
+        }
+        break;
+      default:
+        // do nothing
+        break;
+    }
+
+#ifdef EXPOSE_PHYSICS_VECTORS
+    p1.boost(parent->decay_momentum().boostVector());
+    p2.boost(parent->decay_momentum().boostVector());
+#else
     p1.boost(parent->decay_momentum().get_boost_vector());
     p2.boost(parent->decay_momentum().get_boost_vector());
 #endif
@@ -348,14 +374,42 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
       p2.boost(p23.get_boost_vector());
       p3.boost(p23.get_boost_vector());
 #endif
+      break; // break out of while(true)
+    }
 
-      if(dm.threebody_dalitz_reweighter.is_enabled()) {
-        const double invmass2_12 = (p1+p2).m2();
-        const double invmass2_13 = (p1+p3).m2();
-        const double dalitz_weight = dm.threebody_dalitz_reweighter(invmass2_12,invmass2_13);
-        parent->multiply_decay_weight(dalitz_weight);
-      }
-      break;
+    // need to do the angular ones before boosting
+    switch(dm.reweighting_type) {
+      case decay_mode::reweighter_type::threebody:
+        {
+          const double red_invmass2_12 = (p1+p2).m2() / parent->decay_momentum().m2();
+          const double red_invmass2_13 = (p1+p3).m2() / parent->decay_momentum().m2();
+          const double dalitz_weight = dm.threebody_dalitz_reweighter(red_invmass2_12,red_invmass2_13);
+          parent->multiply_decay_weight(dalitz_weight);
+        }
+        break;
+      case decay_mode::reweighter_type::threebody_angular:
+        {
+          const double red_invmass2_12 = (p1+p2).m2() / parent->decay_momentum().m2();
+          const double red_invmass2_13 = (p1+p3).m2() / parent->decay_momentum().m2();
+          const vector3 reference = ((parent->decay_momentum().vect().mag() > 0)
+              ? parent->decay_momentum().vect().unit()
+              : ((parent->get_parent() != nullptr && parent->get_parent()->decay_momentum().vect().mag() > 0)
+                ? parent->get_parent()->decay_momentum().vect().unit()
+                : vector3{0.,0.,1.} // last resort, use z-axis
+                )
+              );
+          const double costh_2 = p2.vect().unit().dot(reference);
+          const double phi_2 = p2.vect().unit().delta_phi(reference);
+          const double costh_3 = p3.vect().unit().dot(reference);
+          const double phi_23 = p2.vect().unit().delta_phi(p3.vect().unit());
+          const double dalitz_weight = dm.angular_threebody_dalitz_reweighter(
+              red_invmass2_12,red_invmass2_13,costh_2,phi_2,costh_3,phi_23);
+          parent->multiply_decay_weight(dalitz_weight);
+        }
+        break;
+      default:
+        // do nothing
+        break;
     }
 
 #ifdef EXPOSE_PHYSICS_VECTORS

@@ -47,14 +47,18 @@ int main(int argc, char** argv) {
 
   if(to_reweight) {
     // toy reweighter
-    dkgen::core::dalitz_function rw{[](dkgen::core::dalitz_function::inv_mass_1_2_squared m12,
-        dkgen::core::dalitz_function::inv_mass_1_3_squared m13) -> double {
+    dkgen::core::threebody_dalitz_function rw{[](
+        dkgen::core::threebody_dalitz_function::reduced_inv_mass_1_2_squared m12,
+        dkgen::core::threebody_dalitz_function::reduced_inv_mass_1_3_squared m13
+        ) -> double {
       return 1.-std::abs((m12-m13)/(m12+m13)); // maximise symmetric invariant masses
     }};
     
     driver.add_particle_definition(
         dkgen::core::particle_definition{3,15.,.2e3}
-        .add_decay({1.,{{13,true},{-13,true},{11,true}},rw})
+        .add_decay(
+          dkgen::core::decay_mode{1.,{{13,true},{-13,true},{11,true}}}.set_threebody_dalitz_reweighter(rw)
+          )
         .finalise_decay_table()
         );
   }
