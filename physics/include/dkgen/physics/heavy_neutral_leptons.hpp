@@ -8,7 +8,7 @@
 
 #include <gsl/gsl_integration.h>
 
-#undef DEBUG
+#define DEBUG
 #ifdef DEBUG
 #include <iostream>
 #endif

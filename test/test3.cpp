@@ -13,31 +13,40 @@
 int main(int argc, char** argv) {
   size_t n_to_gen = 10;
   double mass = 0.140, Ue4 = 0, Um4 = 0, Ut4 = 0;
-  bool force = false;
+  bool force = false, majorana = false;
   for(int i = 0; i < argc /* as -n option will have argument */; ++i) {
-    if(i+1 < argc && std::string(argv[i]) == "-n") {
+    if(i+1 < argc && std::string(argv[i]) == "-n") { // number to gen
       n_to_gen = std::atoll(argv[i+1]);
       i++;
+      continue;
     }
-    if(i+1 < argc && std::string(argv[i]) == "-m") {
+    if(i+1 < argc && std::string(argv[i]) == "-m") { // mass
       mass = std::atof(argv[i+1]);
       i++;
+      continue;
     }
-    if(i+1 < argc && std::string(argv[i]) == "-E") {
+    if(i+1 < argc && std::string(argv[i]) == "-E") { // Ue4 angle
       Ue4 = std::atof(argv[i+1]);
       i++;
+      continue;
     }
-    if(i+1 < argc && std::string(argv[i]) == "-M") {
+    if(i+1 < argc && std::string(argv[i]) == "-M") { // Umu4 angle
       Um4 = std::atof(argv[i+1]);
       i++;
+      continue;
     }
-    if(i+1 < argc && std::string(argv[i]) == "-T") {
+    if(i+1 < argc && std::string(argv[i]) == "-T") { // Utau4 angle
       Ut4 = std::atof(argv[i+1]);
       i++;
+      continue;
     }
     if(std::string(argv[i]) == "-f") {
       force = true;
-      i++;
+      continue;
+    }
+    if(std::string(argv[i]) == "-e") { // 'e' for Ettora Majorana (m/M already taken)
+      majorana = true;
+      continue;
     }
   }
   if(Ue4 == 0. && Um4 == 0. && Ut4 == 0.) {
@@ -59,12 +68,12 @@ int main(int argc, char** argv) {
   const std::string metadata = "";
   //const std::string metadata{(std::ostringstream() << "model_theta=" << scalar_theta).str()};
   //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
-  const dkgen::physics::heavy_neutral_leptons::model_parameters params{mass, Ue4, Um4, Ut4, false};
+  const dkgen::physics::heavy_neutral_leptons::model_parameters params{mass, Ue4, Um4, Ut4, majorana};
   auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf);
   driver.set_particle_content(particles);
 
   auto& kaon = conf.physical_params().find_particle("kaon_pm");
-  const int kpdg = kaon.pdgcode;
+  const int kpdg = -kaon.pdgcode;
   const double kmass = kaon.mass;
   const double kmom = 0.5;
   
@@ -82,7 +91,6 @@ int main(int argc, char** argv) {
           dkgen::core::decaying_particle_info::state_type::non_final // state
         },
         [&rng, &gen]()->double{return rng(gen);});
-
     if(res) {
       std::cout << res.build_hepevt_output().build_text(metadata.c_str()) << std::endl;
     }

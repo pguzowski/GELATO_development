@@ -14,10 +14,12 @@ int main(int argc, char** argv) {
     if(i+1 < argc && std::string(argv[i]) == "-n") {
       n_to_gen = std::atoll(argv[i+1]);
       i++;
+      continue;
     }
     // use three body reweighting
-    else if(std::string(argv[i]) == "-r") {
+    if(std::string(argv[i]) == "-r") {
       to_reweight = true;
+      continue;
     }
   }
 

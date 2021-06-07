@@ -16,18 +16,21 @@ int main(int argc, char** argv) {
     if(i+1 < argc && std::string(argv[i]) == "-n") {
       n_to_gen = std::atoll(argv[i+1]);
       i++;
+      continue;
     }
     if(i+1 < argc && std::string(argv[i]) == "-m") {
       mass = std::atof(argv[i+1]);
       i++;
+      continue;
     }
     if(i+1 < argc && std::string(argv[i]) == "-t") {
       theta = std::atof(argv[i+1]);
       i++;
+      continue;
     }
     if(std::string(argv[i]) == "-f") {
       force = true;
-      i++;
+      continue;
     }
   }
 
