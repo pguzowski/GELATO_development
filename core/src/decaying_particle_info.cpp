@@ -77,11 +77,6 @@ void dkgen::core::decaying_particle_info::reset_decay_position() {
   }
 }
 
-
-bool dkgen::core::decaying_particle_info::is_decay_set() const {
-  return !(dec_pos.t() < prod_pos.t());
-}
-
 dkgen::core::decaying_particle_info::decaying_particle_info(int pdg,
           fourvector prod_pos, fourvector dec_pos, fourvector prod_mom, state_type state) 
   : pdg_code{pdg}, parent{nullptr}, prod_pos{std::move(prod_pos)}, dec_pos{std::move(dec_pos)},

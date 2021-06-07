@@ -117,9 +117,14 @@ void dkgen::core::driver::sort_particles() {
 
 bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr parent,
     random_uniform_0_1_generator rng) const {
-  if(!parent->is_decay_set() && !parent->is_final_state()) {
+  if(!parent->is_decay_position_set() && !parent->is_final_state()) {
 
     const particle_definition& p = find_particle(parent->pdg());
+    if(p.lifetime() < 0.) {
+      return false; // doesn't decay inside detector because it doesn't decay
+                    // also won't set decay positions of any children etc. because
+                    // theoretically they will be produced at infinity as this doesn't decay
+    }
 
     bool decay_set = false;
     if(parent->is_pre_final_state()) {
@@ -134,6 +139,7 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
         const double tof2 = (detector_points.last() - origin).mag()/speed;
         const double u = rng();
         // conversion between 0--1 to somewhere along tof1--tof2 with exponential decay
+        // argument of std::log is always positive because 0<u<1, lifetime>0,tof1<tof2 => std::exp<1
         const double tof = tof1 - p.lifetime() * std::log(1.-u+u*std::exp((tof1-tof2)/p.lifetime()));
         const double weight = std::exp(-tof1/p.lifetime()) - std::exp(-tof2/p.lifetime());
         parent->set_decay_pos_from_tof(tof, config.physical_params().speed_of_light);
@@ -150,7 +156,8 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
 #ifdef DEBUG
       std::cout << "Setting non-forced decay\n";
 #endif
-      const double tof = -p.lifetime() * std::log(1. - rng());
+      const double u = rng();
+      const double tof = -p.lifetime() * std::log(1. - u);
       parent->set_decay_pos_from_tof(tof, config.physical_params().speed_of_light);
     }
     for(auto& d : parent->get_children()) { // also need to update the children positions
@@ -201,6 +208,7 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
   if(parent->is_final_state()) return;
 
   const particle_definition& parent_particle_info = find_particle(parent->pdg());
+  if(parent_particle_info.lifetime() < 0.) return; // stable particle
   auto const& dm = parent_particle_info.generate_decay_mode(rng);
   if(dm.is_null()) return;
 

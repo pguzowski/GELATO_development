@@ -62,7 +62,7 @@ namespace dkgen {
         decaying_particle_info& set_pre_final_state() { state = state_type::pre_final_state; return *this; }
         decaying_particle_info& unset_pre_final_state() { state = state_type::non_final; return *this; }
 
-        bool is_decay_set() const;
+        bool is_decay_position_set() const { return !(dec_pos.t() < prod_pos.t()); }
 
         size_t get_number_of_particles_in_hierarchy() const;
       private:
