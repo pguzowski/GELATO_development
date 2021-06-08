@@ -35,7 +35,7 @@ namespace dkgen {
         using functype = std::function<double(reduced_inv_mass_1_2_squared,reduced_inv_mass_1_3_squared)>;
 
         threebody_dalitz_function() /*: enabled(false)*/ {}
-        threebody_dalitz_function(functype fn) : /*enabled(true),*/ /*maxweight(0.),*/ func(fn) {}
+        threebody_dalitz_function(functype fn) : /*enabled(true),*/ func(fn) {}
         
         double operator()(reduced_inv_mass_1_2_squared m12, reduced_inv_mass_1_3_squared m13) const {
           //if(!enabled) return 1.;
@@ -127,12 +127,12 @@ namespace dkgen {
         reweighting_type = reweighter_type::threebody;
         return *this;
       }
-      decay_mode& set_angular_dalitz_reweighter(const angular_threebody_dalitz_function& rw) {
+      decay_mode& set_angular_threebody_dalitz_reweighter(const angular_threebody_dalitz_function& rw) {
         angular_threebody_dalitz_reweighter = rw;
         reweighting_type = reweighter_type::threebody_angular;
         return *this;
       }
-      decay_mode& set_threebody_dalitz_reweighter(angular_threebody_dalitz_function&& rw) {
+      decay_mode& set_angular_threebody_dalitz_reweighter(angular_threebody_dalitz_function&& rw) {
         angular_threebody_dalitz_reweighter = std::move(rw);
         reweighting_type = reweighter_type::threebody_angular;
         return *this;
@@ -143,6 +143,7 @@ namespace dkgen {
 
     class particle_definition {
       public:
+        using decay_table_t = std::vector<decay_mode>;
         particle_definition() = default;
         // negative lifetime for stable or final state particles
         particle_definition(int pdgc, double m, double lt = -1., bool scj = false);
@@ -155,6 +156,8 @@ namespace dkgen {
         particle_definition& add_decay(const decay_mode& dm);
         particle_definition& add_decay(decay_mode&& dm);
 
+        const decay_table_t& get_decay_table() const { return decay_table; }
+
         const decay_mode& generate_decay_mode(random_uniform_0_1_generator rng) const;
         const decay_mode& generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const;
 
@@ -164,7 +167,7 @@ namespace dkgen {
         int pdg_code;
         double m;
         double ltime;
-        std::vector<decay_mode> decay_table;
+        decay_table_t decay_table;
         std::vector<double> sum_branching_ratios;
         bool self_conjugate;
 

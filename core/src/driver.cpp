@@ -111,7 +111,7 @@ dkgen::core::driver& dkgen::core::driver::set_particle_content(particle_map&& p)
 
 void dkgen::core::driver::sort_particles() {
   std::sort(particle_content.begin(), particle_content.end(),
-      [](auto& a, auto& b) { return std::abs(a.pdg()) < std::abs(b.pdg()); });
+      [](auto& a, auto& b) { return a.pdg() < b.pdg(); });
 }
 
 
@@ -188,8 +188,12 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
 }
 
 const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int pdg) const {
-  auto p = std::lower_bound(particle_content.begin(), particle_content.end(), std::abs(pdg),
-      [](auto& a, int find_pdg) { return std::abs(a.pdg()) < find_pdg; } );
+  // first check if pdg exists
+  auto sorter = [](auto& a, int find_pdg) { return a.pdg() < find_pdg; };
+  auto p1 = std::lower_bound(particle_content.begin(), particle_content.end(), pdg, sorter);
+  if(p1 != particle_content.end() && p1->pdg() == pdg) return *p1;
+  // then check if abs(pdg) exists for antiparticle
+  auto p = std::lower_bound(particle_content.begin(), particle_content.end(), std::abs(pdg), sorter);
   if (p == particle_content.end() || std::abs(p->pdg()) != std::abs(pdg)) {
     throw std::runtime_error("Undefined particle requested! PDG code "+std::to_string(pdg));
   }

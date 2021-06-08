@@ -2,6 +2,11 @@
 
 #include <algorithm>
 
+#define DEBUG
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 dkgen::core::decay_mode::decay_mode(double br, daughter_vector_t dgt) :
   branching_ratio{br},
   daughters{std::move(dgt)},
@@ -26,7 +31,13 @@ dkgen::core::particle_definition::particle_definition(int pdgc, double m, double
       
 dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(const decay_mode& dm) {
   if(sum_branching_ratios.size() > 0) {
-    throw std::runtime_error("Decay table has been finalised already!");
+#ifdef DEBUG
+    std::cerr << sum_branching_ratios.size() << std::endl;
+    for(auto s : sum_branching_ratios) {
+      std::cerr << "sum: " << s << std::endl;
+    }
+#endif
+    throw std::runtime_error("particle_definition::add_decay(const&): Decay table has been finalised already!");
   }
   if(dm.branching_ratio < 0.) {
     throw std::runtime_error("Negative branching ratio is unphysical");
@@ -36,7 +47,7 @@ dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(co
 }
 dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(decay_mode&& dm) {
   if(sum_branching_ratios.size() > 0) {
-    throw std::runtime_error("Decay table has been finalised already!");
+    throw std::runtime_error("particle_definition::add_decay(&&):Decay table has been finalised already!");
   }
   if(dm.branching_ratio < 0.) {
     throw std::runtime_error("Negative branching ratio is unphysical");
@@ -47,7 +58,7 @@ dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(de
 
 dkgen::core::particle_definition& dkgen::core::particle_definition::finalise_decay_table() {
   if(sum_branching_ratios.size() > 0) {
-    throw std::runtime_error("Decay table has been finalised already!");
+    throw std::runtime_error("particle_definition::finalise_decay_table(): Decay table has been finalised already!");
   }
   double rolling_sum_branching_ratios = 0.;
   for(auto const& dm : decay_table) {
