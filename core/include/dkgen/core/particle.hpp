@@ -15,16 +15,16 @@ namespace dkgen {
         using cos_theta = double; // angle w.r.t. parent momentum (or parent's parent momentum if decaying at rest)
         using functype = std::function<double(cos_theta cth)>;
 
-        twobody_dalitz_function() : enabled(false) {}
-        twobody_dalitz_function(functype fn) : enabled(true),  func(fn) {}
+        twobody_dalitz_function() /*: enabled(false)*/ {}
+        twobody_dalitz_function(functype fn) : /*enabled(true),*/  func(fn) {}
         
         double operator()(cos_theta cth) const {
-          if(!enabled) return 1.;
+          //if(!enabled) return 1.;
           return func(cth);
         }
-        bool is_enabled() const { return enabled; }
+        //bool is_enabled() const { return enabled; }
       private:
-        bool enabled;
+        //bool enabled;
         functype func;
     };
 
@@ -34,17 +34,17 @@ namespace dkgen {
         using reduced_inv_mass_1_3_squared = double; // invariant mass of 1st and 3rd partcile system
         using functype = std::function<double(reduced_inv_mass_1_2_squared,reduced_inv_mass_1_3_squared)>;
 
-        threebody_dalitz_function() : enabled(false) {}
-        threebody_dalitz_function(functype fn) : enabled(true), /*maxweight(0.),*/ func(fn) {}
+        threebody_dalitz_function() /*: enabled(false)*/ {}
+        threebody_dalitz_function(functype fn) : /*enabled(true),*/ /*maxweight(0.),*/ func(fn) {}
         
         double operator()(reduced_inv_mass_1_2_squared m12, reduced_inv_mass_1_3_squared m13) const {
-          if(!enabled) return 1.;
+          //if(!enabled) return 1.;
           double ret = func(m12, m13);
           return ret;
         }
-        bool is_enabled() const { return enabled; }
+        //bool is_enabled() const { return enabled; }
       private:
-        bool enabled;
+        //bool enabled;
         functype func;
     };
 
@@ -59,18 +59,18 @@ namespace dkgen {
         using functype = std::function<double(reduced_inv_mass_1_2_squared,reduced_inv_mass_1_3_squared,
             cos_theta_2,phi_2,cos_theta_3,phi_23)>;
 
-        angular_threebody_dalitz_function() : enabled(false) {}
-        angular_threebody_dalitz_function(functype fn) : enabled(true), /*maxweight(0.),*/ func(fn) {}
+        angular_threebody_dalitz_function() /*: enabled(false)*/ {}
+        angular_threebody_dalitz_function(functype fn) : /*enabled(true),*/ func(fn) {}
         
         double operator()(reduced_inv_mass_1_2_squared m12, reduced_inv_mass_1_3_squared m13,
             cos_theta_2 cth2, phi_2 ph2, cos_theta_3 cth3, phi_23 ph23) const {
-          if(!enabled) return 1.;
+          //if(!enabled) return 1.;
           double ret = func(m12, m13, cth2, ph2, cth3, ph23);
           return ret;
         }
-        bool is_enabled() const { return enabled; }
+        //bool is_enabled() const { return enabled; }
       private:
-        bool enabled;
+        //bool enabled;
         functype func;
     };
 
