@@ -32,7 +32,7 @@ namespace dkgen {
       };
       
       enum class decay_modes { nu_nu_nu, e_e_nu, e_mu_nu, mu_e_nu, mu_mu_nu, e_pi, mu_pi, pi0_nu };
-      enum class production_modes { k_mu2, k_mu3, k_e2, k_e3, pi_mu, mu_e3 };
+      enum class production_modes { k_mu2, k_mu3, k_e2, k_e3, k0_mu, k0_e, pi_mu, pi_e, mu_e };
       
       struct model_parameters {
         double HNL_mass;
@@ -57,8 +57,11 @@ namespace dkgen {
             production_modes::k_mu3,
             production_modes::k_e2,
             production_modes::k_e3,
+            production_modes::k0_mu,
+            production_modes::k0_e,
             production_modes::pi_mu,
-            production_modes::mu_e3,
+            production_modes::pi_e,
+            production_modes::mu_e,
           },
           dkgen::core::driver::particle_map input = {}) {
 
@@ -71,7 +74,7 @@ namespace dkgen {
         auto& pion_pm = conf.physical_params().find_particle("pion_pm");
         auto& pion_0  = conf.physical_params().find_particle("pion_0");
         auto& kaon_pm = conf.physical_params().find_particle("kaon_pm");
-        //auto& kaon_0L = conf.physical_params().find_particle("kaon_0L");
+        auto& kaon_0L = conf.physical_params().find_particle("kaon_0L");
         auto& elec    = conf.physical_params().find_particle("elec");
         auto& muon    = conf.physical_params().find_particle("muon");
         auto& nu    = conf.physical_params().find_particle("nu_e"); // all neutrinos will be saved as nu_e
@@ -80,10 +83,12 @@ namespace dkgen {
 
         const int HNL_pdg_poshel  = 91; // free pdg code for 4th generation neutrino = 90 + helicity
         const int HNL_pdg_neghel  = 89; // free pdg code for 4th generation neutrino = 90 + helicity
+                                        // antipartciles have opposite helicity
+                                        // -91: neghel; -89: poshel (still works with -90 + helicity scheme)
         const int pion_pm_pdg = pion_pm.pdgcode;
         const int pion_0_pdg  = pion_0.pdgcode;
         const int kaon_pm_pdg = kaon_pm.pdgcode;
-        //const int kaon_0L_pdg = kaon_0L.pdgcode;
+        const int kaon_0L_pdg = kaon_0L.pdgcode;
         const int elec_pdg    = elec.pdgcode;
         const int muon_pdg    = muon.pdgcode;
         const int nu_pdg   = nu.pdgcode;
@@ -95,12 +100,12 @@ namespace dkgen {
         const double pion_pm_mass = pion_pm.mass;
         const double pion_0_mass  = pion_0.mass;
         const double kaon_pm_mass = kaon_pm.mass;
-        //const double kaon_0L_mass = kaon_0L.mass;
+        const double kaon_0L_mass = kaon_0L.mass;
         const double elec_mass    = elec.mass;
         const double muon_mass    = muon.mass;
 
         const double kaon_pm_lt = kaon_pm.lifetime;
-        //const double kaon_0L_lt = kaon_0L.lifetime;
+        const double kaon_0L_lt = kaon_0L.lifetime;
         const double pion_pm_lt = pion_pm.lifetime;
         const double pion_0_lt  = pion_0.lifetime;
         const double elec_lt    = elec.lifetime;
@@ -109,6 +114,19 @@ namespace dkgen {
         const double hbar = conf.physical_params().hbar;
         const double gfermi2 = std::pow(conf.physical_params().gFermi,2);
 
+        const double f2_pion = conf.physical_params().pion_decay_constant;
+        const double CKM_Vud2 = std::pow(conf.physical_params().CKM_Vud,2);
+        const double CKM_Vus2 = std::pow(conf.physical_params().CKM_Vus,2);
+        
+        
+        const bool self_conjugate = true;
+        const bool final_state = true;
+        const bool NOT_final_state = !final_state;
+
+        const int helicity_plus = +1;
+        const int helicity_minus = -1;
+        
+        
         // only implementing total decay rates for now;
         constexpr double pi3_inv = 1./M_PI/M_PI/M_PI; // 1/pi^3
 
@@ -140,13 +158,7 @@ namespace dkgen {
           return std::sqrt(a*a + b*b + c*c -2*a*b -2*a*c -2*b*c);
         };
         auto sqrtkl = sqrt_kallen_lambda; // alias with shorter name
-        auto I1_2 = [sqrtkl](double x, double y) {
-          return sqrtkl(1.,x,y) * (std::pow(1.-x,2) - y*(1.+x));
-        };
-        auto I1_2_1 = [sqrtkl](double x, double y, double cos_theta, int plus_minus) {
-          const double sqrt_kl = sqrtkl(1.,x,y);
-          return sqrt_kl / 4./M_PI * (std::pow(1.-x,2) - y*(1.+x) + plus_minus * (x-1.) * sqrt_kl * cos_theta);
-        };
+        
         auto integrate = [](auto fn, double low, double high) -> double { 
           double result, error;
           size_t neval;
@@ -154,6 +166,447 @@ namespace dkgen {
           gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);   
           gsl_integration_qng(func, low, high, 1e-5, 1e-5, &result, &error, &neval);
           return result;
+        };
+        /*
+        auto integrate2 = [](auto fn, double low, double high,
+            gsl_integration_workspace * const ws, size_t limit) -> double { 
+          double result, error;
+          //size_t neval;
+          gsl_function_wrapper<decltype(fn)> wrapped_fn(fn);
+          gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);   
+          gsl_integration_qags(func, low, high, 1e-2, 1e-2, limit,  ws, &result, &error);
+          return result;
+        };
+        */
+        
+        auto I_h1 = [sqrtkl,integrate](double x, double y, double z, double f0, double lam_plus, double lam_0, int plus_minus) {
+          auto s_integrand = [sqrtkl,plus_minus,f0,lam_plus,lam_0,x,y,z,integrate](double s) {
+            auto t_integrand = [sqrtkl,plus_minus,s,f0,lam_plus,lam_0,x,y,z](double t) {
+              const double u = 1. + x + y + z - s - t;
+              if(std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) {
+                throw std::runtime_error("will get nan in integration");
+              }
+              const double sqrt_kl_uyz = (std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) ? 0. : plus_minus * sqrtkl(u,y,z);
+              const double A = 0.5 * (1. + y - t) * (1. + z - s - plus_minus * sqrtkl(1,z,s))
+                - 0.5 * (u - y - z - sqrt_kl_uyz);
+              const double B = 0.5 * (y + z) * (u - y - z) + 2 * x * y - 0.5 * (y - z) * sqrt_kl_uyz;
+              const double C = z * (1 + y - t) + (y + 0.5 * sqrt_kl_uyz) * (1 + z - s);
+              const double F = f0 * (1. + lam_plus * u / x);
+              const double G = f0 * (1. + lam_plus * u / x - (lam_plus - lam_0) * (1. + 1. / x));
+              if(std::isnan(A) || std::isnan(B) || std::isnan(C) || std::isnan(F) || std::isnan(G)) {
+                std::cout<<"s " << s<<" t "<<t<<" u " <<u <<" x "<<x<<" y "<<y<<" z "<<z
+                  <<" f0 "<<f0<<" l+ "<<lam_plus<<" l0 "<<lam_0
+                  <<" kl_uyz " <<sqrt_kl_uyz<< " kl_1zs "<<sqrtkl(1,z,s)<<" "<<std::endl;
+                std::cout << std::sqrt(u) <<" "<< std::sqrt(y) + std::sqrt(z)<<std::endl;
+                std::cout << (1. + s*s + t*t + 2.*s* (-1. + t - x) + 2.*x + x*x - 2.*t*(1. + x) - 4*y*z) << std::endl;
+                throw std::runtime_error("nan in integration");
+              }
+              return F*F*A + G*G*B - F*G*C;
+            };
+            const double midpt = x + z + (1. - s - z) * (s - y + x) / 2. / s;
+            const double delta = sqrtkl(s,x,y) * sqrtkl(1,s,z) / 2. / s;
+            if(std::isnan(midpt) || std::isnan(delta)) {
+              std::cout << "s "<<s<<" midpt "<<midpt<<" delta "<<delta<< " sqrtkl(s,y,z) "<<sqrtkl(s,y,z)<<" sqrtkl(1,s,z) "<<sqrtkl(1,s,z)<<std::endl;
+                throw std::runtime_error("nan in integration limits");
+            }
+            return integrate(t_integrand, midpt - delta, midpt + delta);
+          };
+          return integrate(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
+        };
+
+        auto P_decay_rate_to_leptons = [&dparams,sqrtkl,HNL_mass](flavour fl, double sm_nu_br, double pseudoscalar_mass, double lep_mass, int plus_minus) {
+          const double xi_N = std::pow(HNL_mass/pseudoscalar_mass,2);
+          const double xi_l = std::pow(lep_mass/pseudoscalar_mass,2);
+          const double sqrt_kl = sqrtkl(1.,xi_N,xi_l);
+          const double sub = xi_N - xi_l;
+          return dparams.U2(fl) * sqrt_kl * (xi_l + xi_N - std::pow(sub,2) + plus_minus * sub * sqrt_kl)
+            / (2.* xi_l * std::pow(1. - xi_l,2)) * sm_nu_br;
+        };
+        auto P_decay_rate_to_semilepton_Pprime = [&dparams,HNL_mass,I_h1](flavour fl, double sm_nu_br,
+            double pseudoscalar_mass, double lep_mass, double pprime_mass, double CKM_V2,
+            double f0_P_Pprime, double lam_plus_P_Pprime, double lam_0_P_Pprime,
+            int plus_minus) {
+          const double xi_h = std::pow(pprime_mass/pseudoscalar_mass,2);
+          const double xi_N = std::pow(HNL_mass/pseudoscalar_mass,2);
+          const double xi_l = std::pow(lep_mass/pseudoscalar_mass,2);
+          return dparams.U2(fl) * CKM_V2 * sm_nu_br
+            * I_h1(xi_h, xi_l, xi_N, f0_P_Pprime, lam_plus_P_Pprime, lam_0_P_Pprime, plus_minus)
+            / I_h1(xi_h, xi_l, 0,    f0_P_Pprime, lam_plus_P_Pprime, lam_0_P_Pprime, plus_minus);
+        };
+
+        const double kaon_pm_m2_BR = 0.6356;
+        const double kaon_pm_e2_BR = 0.0016;
+        const double kaon_pm_m3_BR = 0.0335;
+        const double kaon_pm_e3_BR = 0.0507;
+        const double kaon_0L_m3_BR = 0.2704;
+        const double kaon_0L_e3_BR = 0.4055;
+        const double pion_pm_m2_BR = 0.9998;
+        const double pion_pm_e2_BR = 0.0001;
+        
+        const double f0_k_pi = 0.9706; // https://arxiv.org/abs/1902.08191
+        const double lam_plus_k_pi = 0.0309; // PDG
+        const double lam_0_k_pi = 0.0173; // PDG
+
+        auto production_mode_enabled = [production_modes_to_use](auto pm) -> bool {
+          return std::find(production_modes_to_use.begin(), production_modes_to_use.end(), pm) != production_modes_to_use.end();
+        };
+        
+        
+        
+        
+        
+        //////////////// KAON DECAYS ///////////////////////////////////////////////////////////////////////////////
+        
+        double total_kaon_decay_rate = 0.;
+        std::map<production_modes,double> K_decay_rates_poshel, K_decay_rates_neghel;
+        if(kaon_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu2)) {
+          const double decay_rate_pos = P_decay_rate_to_leptons(
+              flavour::m, kaon_pm_m2_BR, kaon_pm_mass, muon_mass, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_mu2] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_leptons(
+              flavour::m, kaon_pm_m2_BR, kaon_pm_mass, muon_mass, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_mu2] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e2)) {
+          const double decay_rate_pos = P_decay_rate_to_leptons(
+              flavour::e, kaon_pm_e2_BR, kaon_pm_mass, elec_mass, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_e2] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_leptons(
+              flavour::e, kaon_pm_e2_BR, kaon_pm_mass, elec_mass, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_e2] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu3)) {
+          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
+              flavour::m, kaon_pm_m3_BR, kaon_pm_mass, muon_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_mu3] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
+              flavour::m, kaon_pm_m3_BR, kaon_pm_mass, muon_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_mu3] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e3)) {
+          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
+              flavour::e, kaon_pm_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_e3] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
+              flavour::e, kaon_pm_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_e3] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }        
+        
+        
+        ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt});
+        auto& charged_kaon = ret.back();
+        
+        if(kaon_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu2)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_mu2]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_mu2]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state}}
+          });
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e2)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_e2]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_e2]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state}}
+          });
+        }
+        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu3)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_mu3]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_mu3]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e3)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_e3]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_e3]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+        }
+        charged_kaon.finalise_decay_table();
+
+        
+        //////////////// K0L DECAYS ///////////////////////////////////////////////////////////////////////////////
+        
+        
+        
+        double total_k0_decay_rate = 0.;
+        std::map<production_modes,double> K0_decay_rates_poshel, K0_decay_rates_neghel;
+        if(kaon_0L_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k0_mu)) {
+          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
+              flavour::m, kaon_0L_m3_BR, kaon_0L_mass, muon_mass, pion_pm_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
+          K0_decay_rates_poshel[production_modes::k0_mu] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
+              flavour::m, kaon_0L_m3_BR, kaon_pm_mass, muon_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
+          K0_decay_rates_neghel[production_modes::k0_mu] = decay_rate_neg;
+          total_k0_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(kaon_0L_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k0_e)) {
+          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
+              flavour::e, kaon_0L_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
+          K0_decay_rates_poshel[production_modes::k0_e] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
+              flavour::e, kaon_0L_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
+          K0_decay_rates_neghel[production_modes::k0_e] = decay_rate_neg;
+          total_k0_decay_rate += decay_rate_pos + decay_rate_neg;
+        }        
+        
+        
+        ret.push_back(dkgen::core::particle_definition{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt});
+        auto& neutral_kaon = ret.back();
+        
+        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu3)) {
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_poshel[production_modes::k0_mu]/total_k0_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_poshel[production_modes::k0_mu]/total_k0_decay_rate,
+              {{-HNL_pdg_poshel,NOT_final_state},{muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_neghel[production_modes::k0_mu]/total_k0_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_neghel[production_modes::k0_mu]/total_k0_decay_rate,
+              {{-HNL_pdg_neghel,NOT_final_state},{muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e3)) {
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_poshel[production_modes::k0_e]/total_k0_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_poshel[production_modes::k0_e]/total_k0_decay_rate,
+              {{-HNL_pdg_poshel,NOT_final_state},{elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_neghel[production_modes::k0_e]/total_k0_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              .5 * K0_decay_rates_neghel[production_modes::k0_e]/total_k0_decay_rate,
+              {{-HNL_pdg_neghel,NOT_final_state},{elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+        }
+        neutral_kaon.finalise_decay_table();
+
+        
+        
+        
+        
+        //////////////// PION DECAYS ///////////////////////////////////////////////////////////////////////////////
+        
+
+
+
+
+
+        double total_pion_decay_rate = 0.;
+        std::map<production_modes,double> pi_decay_rates_poshel, pi_decay_rates_neghel;
+        if(pion_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::pi_mu)) {
+          const double decay_rate_pos = P_decay_rate_to_leptons(
+              flavour::m, pion_pm_m2_BR, pion_pm_mass, muon_mass, helicity_plus);
+          pi_decay_rates_poshel[production_modes::pi_mu] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_leptons(
+              flavour::m, pion_pm_m2_BR, pion_pm_mass, muon_mass, helicity_minus);
+          pi_decay_rates_neghel[production_modes::pi_mu] = decay_rate_neg;
+          total_pion_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(pion_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::pi_e)) {
+          const double decay_rate_pos = P_decay_rate_to_leptons(
+              flavour::e, pion_pm_e2_BR, pion_pm_mass, elec_mass, helicity_plus);
+          pi_decay_rates_poshel[production_modes::pi_e] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_leptons(
+              flavour::e, pion_pm_e2_BR, pion_pm_mass, elec_mass, helicity_minus);
+          pi_decay_rates_neghel[production_modes::pi_e] = decay_rate_neg;
+          total_pion_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        
+        ret.push_back(dkgen::core::particle_definition{pion_pm_pdg,pion_pm_mass,pion_pm_lt});
+        auto& charged_pion = ret.back();
+        
+        if(pion_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::pi_mu)) {
+          charged_pion.add_decay({
+              pi_decay_rates_poshel[production_modes::pi_mu]/total_pion_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state}}
+          });
+          charged_pion.add_decay({
+              pi_decay_rates_neghel[production_modes::pi_mu]/total_pion_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state}}
+          });
+        }
+        if(pion_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::pi_e)) {
+          charged_pion.add_decay({
+              pi_decay_rates_poshel[production_modes::pi_e]/total_pion_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state}}
+          });
+          charged_pion.add_decay({
+              pi_decay_rates_neghel[production_modes::pi_e]/total_pion_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state}}
+          });
+        }
+        charged_pion.finalise_decay_table();
+
+        
+
+        //////////////// MUON DECAYS ///////////////////////////////////////////////////////////////////////////////
+
+
+        auto I_l = [sqrtkl,integrate] (double x, double y, double z, int plus_minus, bool is_anti) -> double  {
+          std::function<double(double)> integrand;
+          if(is_anti) {
+            integrand = [sqrtkl,x,y,z,plus_minus](double s) -> double {
+              const double sqrt_kl_1sz = sqrtkl(1,s,z);
+              return (1.+z-s-plus_minus*sqrt_kl_1sz)*(s-x-y)*sqrtkl(s,x,y)*sqrt_kl_1sz/s;
+            };
+          } else {
+            integrand = [sqrtkl,x,y,z,plus_minus](double s) -> double  {
+              const double sqrt_kl_sxy = sqrtkl(s,x,y);
+              return (1.+z-s)*(s-x-y-plus_minus*sqrt_kl_sxy)*sqrt_kl_sxy*sqrtkl(1,s,z)/s;
+            };
+          }
+          return 12. * integrate(integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
+        };
+        
+        // for mu+ -> e+ + ... (so for antiparticles)
+        // split this into UalphaN and UbetaN for later use
+        auto triple_lepton_decay_rate = [HNL_mass,I_l] (double U2,
+            double parent_mass, double child_mass, int plus_minus, bool anti) {
+          const double xi_N = std::pow(HNL_mass/parent_mass,2);
+          const double xi_l = std::pow(child_mass/parent_mass,2);
+          // only care about relative branching ratios, gFerm * m5/192 pi^3 not needed
+          return U2 * (anti ? I_l(0.,xi_l,xi_N,plus_minus,anti) : I_l(xi_N,xi_l,0.,plus_minus,!anti));
+        };
+
+        double total_muon_decay_rate = 0.;
+        enum class mudecay { mu_e_N, mu_e_Nbar };
+
+        // https://arxiv.org/pdf/1905.00284.pdf p16
+        // The decay of a charged lepton (antilepton) of flavour α to a charged lepton (antilepton)
+        // of flavour β can be proportional to either |UαN| or |UβN|, producing a heavy Dirac
+        // neutrino (antineutrino) in the first case or an antineutrino (neutrino) in the second case
+        //
+        // Formula 4.4 is for antileptons, hence mu+ -> (antineutrino), e+ -> (neutrino)
+
+        std::map<mudecay,double> muon_decay_rates_poshel, muon_decay_rates_neghel;
+        if(muon_mass > HNL_mass + elec_mass && params.U_m4 + params.U_e4 > 0.
+            && production_mode_enabled(production_modes::mu_e)) {
+          const double decay_rate_pos_Nbar = triple_lepton_decay_rate(dparams.U2(flavour::m),
+              muon_mass, elec_mass, helicity_plus, false);
+          muon_decay_rates_poshel[mudecay::mu_e_N] = decay_rate_pos_Nbar;
+          const double decay_rate_pos_N = triple_lepton_decay_rate(dparams.U2(flavour::e),
+              muon_mass, elec_mass, helicity_plus, true);
+          muon_decay_rates_poshel[mudecay::mu_e_Nbar] = decay_rate_pos_N;
+          const double decay_rate_neg_Nbar = triple_lepton_decay_rate(dparams.U2(flavour::m),
+              muon_mass, elec_mass, helicity_minus, false);
+          muon_decay_rates_neghel[mudecay::mu_e_Nbar] = decay_rate_neg_Nbar;
+          const double decay_rate_neg_N = triple_lepton_decay_rate(dparams.U2(flavour::e),
+              muon_mass, elec_mass, helicity_minus, true);
+          muon_decay_rates_neghel[mudecay::mu_e_N] = decay_rate_neg_N;
+          total_muon_decay_rate += decay_rate_pos_N + decay_rate_neg_N + decay_rate_pos_Nbar + decay_rate_neg_Nbar;
+        }
+        
+        ret.push_back(dkgen::core::particle_definition{muon_pdg,muon_mass,muon_lt});
+        auto& muon_def = ret.back();
+        
+        // need to flip HNL helicities as above decay rates were for antimuons
+        if(muon_mass > HNL_mass + elec_mass && params.U_m4 + params.U_e4 > 0.
+            && production_mode_enabled(production_modes::mu_e)) {
+          neutral_kaon.add_decay({
+              muon_decay_rates_neghel[mudecay::mu_e_N]/total_muon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{elec_pdg,final_state},{-nu_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              muon_decay_rates_neghel[mudecay::mu_e_Nbar]/total_muon_decay_rate,
+              {{-HNL_pdg_poshel,NOT_final_state},{elec_pdg,final_state},{nu_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              muon_decay_rates_poshel[mudecay::mu_e_N]/total_muon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{elec_pdg,final_state},{-nu_pdg,final_state}}
+          });
+          neutral_kaon.add_decay({
+              muon_decay_rates_poshel[mudecay::mu_e_Nbar]/total_muon_decay_rate,
+              {{-HNL_pdg_neghel,NOT_final_state},{elec_pdg,final_state},{nu_pdg,final_state}}
+          });
+        }
+        muon_def.finalise_decay_table();
+
+
+
+
+
+
+
+
+        
+
+        if(total_kaon_decay_rate + total_k0_decay_rate + total_pion_decay_rate + total_muon_decay_rate == 0.) {
+          throw std::runtime_error("Unable to produce HNLs for these parameters and options");
+        }
+
+
+
+
+
+        //////////////// HNL DECAYS ///////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+        
+
+        auto I1_2 = [sqrtkl](double x, double y) {
+          return sqrtkl(1.,x,y) * (std::pow(1.-x,2) - y*(1.+x));
+        };
+        auto I1_2_1 = [sqrtkl](double x, double y, double cos_theta, int plus_minus) {
+          const double sqrt_kl = sqrtkl(1.,x,y);
+          return sqrt_kl / 4./M_PI * (std::pow(1.-x,2) - y*(1.+x) + plus_minus * (x-1.) * sqrt_kl * cos_theta);
         };
         auto I1_3 = [sqrtkl,integrate](double x, double y, double z) {
           if(x<0.) x = 0.;
@@ -337,9 +790,6 @@ namespace dkgen {
           return majorana ? c6_nu_major(l1,l2) : c6_nu_dirac(l1,l2);
         };
 
-        const double f2_pion = conf.physical_params().pion_decay_constant;
-        const double CKM_Vud2 = std::pow(conf.physical_params().CKM_Vud,2);
-        const double CKM_Vus2 = std::pow(conf.physical_params().CKM_Vus,2);
 
         // total decay rates are helicity-independent (HNL_lifetime will apply to both helicities)
         std::map<decay_modes, double> decay_rates;
@@ -438,244 +888,24 @@ namespace dkgen {
           std::cout << "Add hnl->mu_pi r="<<decay_rate<<std::endl;
 #endif
         }
+        // total decay rate is helicity-independent according to https://arxiv.org/abs/1905.00284
         const double HNL_lifetime = hbar / total_decay_rate;
 
-        const bool self_conjugate = true;
-        const bool final_state = true;
-        const bool NOT_final_state = !final_state;
-
-        const int helicity_plus = +1;
-        const int helicity_minus = -1;
-        
-        auto integrate2 = [](auto fn, double low, double high,
-            gsl_integration_workspace * const ws, size_t limit) -> double { 
-          double result, error;
-          //size_t neval;
-          gsl_function_wrapper<decltype(fn)> wrapped_fn(fn);
-          gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);   
-          gsl_integration_qags(func, low, high, 1e-2, 1e-2, limit,  ws, &result, &error);
-          return result;
-        };
-        
-        auto I_h1 = [sqrtkl,integrate,integrate2](double x, double y, double z, double f0, double lam_plus, double lam_0, int plus_minus) {
-          const size_t size = 10000;
-          //gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
-          auto s_integrand = [sqrtkl,plus_minus,f0,lam_plus,lam_0,x,y,z,integrate,integrate2](double s) {
-            const size_t size = 10000;
-            //gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
-            auto t_integrand = [sqrtkl,plus_minus,s,f0,lam_plus,lam_0,x,y,z](double t) {
-              const double u = 1. + x + y + z - s - t;
-              if(std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) {
-                throw std::runtime_error("will get nan in integration");
-              }
-              const double sqrt_kl_uyz = (std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) ? 0. : plus_minus * sqrtkl(u,y,z);
-              const double A = 0.5 * (1. + y - t) * (1. + z - s - plus_minus * sqrtkl(1,z,s))
-                - 0.5 * (u - y - z - sqrt_kl_uyz);
-              const double B = 0.5 * (y + z) * (u - y - z) + 2 * x * y - 0.5 * (y - z) * sqrt_kl_uyz;
-              const double C = z * (1 + y - t) + (y + 0.5 * sqrt_kl_uyz) * (1 + z - s);
-              const double F = f0 * (1. + lam_plus * u / x);
-              const double G = f0 * (1. + lam_plus * u / x - (lam_plus - lam_0) * (1. + 1. / x));
-              //std::cout << "t_integrand " << A << " " << B << " " << C << " " << F << " " << G << " "<<F*F*A + G*G*B - F*G*C<< std::endl;
-              if(std::isnan(A) || std::isnan(B) || std::isnan(C) || std::isnan(F) || std::isnan(G)) {
-                std::cout<<"s " << s<<" t "<<t<<" u " <<u <<" x "<<x<<" y "<<y<<" z "<<z
-                  <<" f0 "<<f0<<" l+ "<<lam_plus<<" l0 "<<lam_0
-                  <<" kl_uyz " <<sqrt_kl_uyz<< " kl_1zs "<<sqrtkl(1,z,s)<<" "<<std::endl;
-                std::cout << std::sqrt(u) <<" "<< std::sqrt(y) + std::sqrt(z)<<std::endl;
-                std::cout << (1. + s*s + t*t + 2.*s* (-1. + t - x) + 2.*x + x*x - 2.*t*(1. + x) - 4*y*z) << std::endl;
-                throw std::runtime_error("nan in integration");
-              }
-              return F*F*A + G*G*B - F*G*C;
-            };
-            const double midpt = x + z + (1. - s - z) * (s - y + x) / 2. / s;
-            const double delta = sqrtkl(s,x,y) * sqrtkl(1,s,z) / 2. / s;
-            if(std::isnan(midpt) || std::isnan(delta)) {
-              std::cout << "s "<<s<<" midpt "<<midpt<<" delta "<<delta<< " sqrtkl(s,y,z) "<<sqrtkl(s,y,z)<<" sqrtkl(1,s,z) "<<sqrtkl(1,s,z)<<std::endl;
-                throw std::runtime_error("nan in integration limits");
-            }
-            return integrate(t_integrand, midpt - delta, midpt + delta);
-            gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
-            auto ret = integrate2(t_integrand, midpt - delta, midpt + delta, ws, size);
-            gsl_integration_workspace_free(ws);
-            //std::cout << "s_integrand " << ret << std::endl;
-            return ret;
-          };
-          return integrate(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
-          gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
-          auto ret =  integrate2(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2), ws, size);
-          gsl_integration_workspace_free(ws);
-          return ret;
-        };
-
-        auto P_decay_rate_to_leptons = [&dparams,sqrtkl,HNL_mass](flavour fl, double sm_nu_br, double pseudoscalar_mass, double lep_mass, int plus_minus) {
-          const double xi_N = std::pow(HNL_mass/pseudoscalar_mass,2);
-          const double xi_l = std::pow(lep_mass/pseudoscalar_mass,2);
-          const double sqrt_kl = sqrtkl(1.,xi_N,xi_l);
-          const double sub = xi_N - xi_l;
-          return dparams.U2(fl) * sqrt_kl * (xi_l + xi_N - std::pow(sub,2) + plus_minus * sub * sqrt_kl)
-            / (2.* xi_l * std::pow(1. - xi_l,2)) * sm_nu_br;
-        };
-        auto P_decay_rate_to_semilepton_Pprime = [&dparams,HNL_mass,I_h1](flavour fl, double sm_nu_br,
-            double pseudoscalar_mass, double lep_mass, double pprime_mass, double CKM_V2,
-            double f0_P_Pprime, double lam_plus_P_Pprime, double lam_0_P_Pprime,
-            int plus_minus) {
-          const double xi_h = std::pow(pprime_mass/pseudoscalar_mass,2);
-          const double xi_N = std::pow(HNL_mass/pseudoscalar_mass,2);
-          const double xi_l = std::pow(lep_mass/pseudoscalar_mass,2);
-          return dparams.U2(fl) * CKM_V2 * sm_nu_br
-            * I_h1(xi_h, xi_l, xi_N, f0_P_Pprime, lam_plus_P_Pprime, lam_0_P_Pprime, plus_minus)
-            / I_h1(xi_h, xi_l, 0,    f0_P_Pprime, lam_plus_P_Pprime, lam_0_P_Pprime, plus_minus);
-        };
-
-        const double kaon_pm_m2_BR = 0.6356;
-        const double kaon_pm_e2_BR = 0.0016;
-        const double kaon_pm_m3_BR = 0.0335;
-        const double kaon_pm_e3_BR = 0.0507;
-        //const double kaon_0L_m3_BR = 0.2704;
-        //const double kaon_0L_e3_BR = 0.4055;
-        //const double pion_pm_m2_BR = 0.9998;
-        //const double pion_pm_e2_BR = 0.0001;
-        //
-        const double f0_k_pi = 0.9706; // https://arxiv.org/abs/1902.08191
-        const double lam_plus_k_pi = 0.0309; // PDG
-        const double lam_0_k_pi = 0.0173; // PDG
-
-        auto production_mode_enabled = [production_modes_to_use](auto pm) -> bool {
-          return std::find(production_modes_to_use.begin(), production_modes_to_use.end(), pm) != production_modes_to_use.end();
-        };
-        
-        double total_kaon_decay_rate = 0.;
-        std::map<production_modes,double> K_decay_rates_poshel, K_decay_rates_neghel;
-        if(kaon_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
-            && production_mode_enabled(production_modes::k_mu2)) {
-          const double decay_rate_pos = P_decay_rate_to_leptons(
-              flavour::m, kaon_pm_m2_BR, kaon_pm_mass, muon_mass, helicity_plus);
-          K_decay_rates_poshel[production_modes::k_mu2] = decay_rate_pos;
-          const double decay_rate_neg = P_decay_rate_to_leptons(
-              flavour::m, kaon_pm_m2_BR, kaon_pm_mass, muon_mass, helicity_minus);
-          K_decay_rates_neghel[production_modes::k_mu2] = decay_rate_neg;
-          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
-        }
-        if(kaon_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
-            && production_mode_enabled(production_modes::k_e2)) {
-          const double decay_rate_pos = P_decay_rate_to_leptons(
-              flavour::e, kaon_pm_e2_BR, kaon_pm_mass, elec_mass, helicity_plus);
-          K_decay_rates_poshel[production_modes::k_e2] = decay_rate_pos;
-          const double decay_rate_neg = P_decay_rate_to_leptons(
-              flavour::e, kaon_pm_e2_BR, kaon_pm_mass, elec_mass, helicity_minus);
-          K_decay_rates_neghel[production_modes::k_e2] = decay_rate_neg;
-          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
-        }
-        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
-            && production_mode_enabled(production_modes::k_mu3)) {
-          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
-              flavour::m, kaon_pm_m3_BR, kaon_pm_mass, muon_mass, pion_0_mass,
-              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
-          K_decay_rates_poshel[production_modes::k_mu3] = decay_rate_pos;
-          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
-              flavour::m, kaon_pm_m3_BR, kaon_pm_mass, muon_mass, pion_0_mass,
-              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
-          K_decay_rates_neghel[production_modes::k_mu3] = decay_rate_neg;
-          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
-        }
-        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
-            && production_mode_enabled(production_modes::k_e3)) {
-          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
-              flavour::e, kaon_pm_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
-              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
-          K_decay_rates_poshel[production_modes::k_e3] = decay_rate_pos;
-          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
-              flavour::e, kaon_pm_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
-              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
-          K_decay_rates_neghel[production_modes::k_e3] = decay_rate_neg;
-          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
-        }
-        if(total_kaon_decay_rate == 0.) {
-          throw std::runtime_error("Unable to produce HNLs for these parameters and options");
-        }
-        
-        
-        
-        ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt});
-        auto& charged_kaon = ret.back();
-        
-        if(kaon_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
-            && production_mode_enabled(production_modes::k_mu2)) {
-          charged_kaon.add_decay({
-              K_decay_rates_poshel[production_modes::k_mu2]/total_kaon_decay_rate,
-              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state}}
-          });
-          charged_kaon.add_decay({
-              K_decay_rates_neghel[production_modes::k_mu2]/total_kaon_decay_rate,
-              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state}}
-          });
-        }
-        if(kaon_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
-            && production_mode_enabled(production_modes::k_e2)) {
-          charged_kaon.add_decay({
-              K_decay_rates_poshel[production_modes::k_e2]/total_kaon_decay_rate,
-              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state}}
-          });
-          charged_kaon.add_decay({
-              K_decay_rates_neghel[production_modes::k_e2]/total_kaon_decay_rate,
-              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state}}
-          });
-        }
-        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
-            && production_mode_enabled(production_modes::k_mu3)) {
-          charged_kaon.add_decay({
-              K_decay_rates_poshel[production_modes::k_mu3]/total_kaon_decay_rate,
-              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
-          });
-          charged_kaon.add_decay({
-              K_decay_rates_neghel[production_modes::k_mu3]/total_kaon_decay_rate,
-              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
-          });
-        }
-        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
-            && production_mode_enabled(production_modes::k_e3)) {
-          charged_kaon.add_decay({
-              K_decay_rates_poshel[production_modes::k_e3]/total_kaon_decay_rate,
-              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
-          });
-          charged_kaon.add_decay({
-              K_decay_rates_neghel[production_modes::k_e3]/total_kaon_decay_rate,
-              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
-          });
-        }
 
 
-        charged_kaon.finalise_decay_table();
-
-
-
-        // have to define separate helicity states
-        // have to define separate antiHNLs for Dirac case, due to angular distributions
+        // have to define separate helicity states, so that they can have different angular distributions
         ret.push_back(dkgen::core::particle_definition{
             HNL_pdg_poshel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
             });
         const size_t HNL_poshel_loc = ret.size()-1;
-        if(!params.is_majorana) {
-          ret.push_back(dkgen::core::particle_definition{
-              -HNL_pdg_poshel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
-              });
-        }
-        const size_t aHNL_poshel_loc = ret.size()-1; // == automatically HNL_poshel_info for Majorana
         ret.push_back(dkgen::core::particle_definition{
             HNL_pdg_neghel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
             });
         const size_t HNL_neghel_loc = ret.size()-1;
-        if(!params.is_majorana) {
-          ret.push_back(dkgen::core::particle_definition{
-              -HNL_pdg_neghel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
-              });
-        }
-        const size_t aHNL_neghel_loc = ret.size()-1; // == automatically HNL_neghel_info for Majorana
 
         // cannot directly use references to ret.back(), because push_back() can invalidate iterators
         auto& HNL_poshel_info = *std::next(ret.begin(), HNL_poshel_loc);
-        auto& aHNL_poshel_info = *std::next(ret.begin(), aHNL_poshel_loc);
         auto& HNL_neghel_info = *std::next(ret.begin(), HNL_neghel_loc);
-        auto& aHNL_neghel_info = *std::next(ret.begin(), aHNL_neghel_loc);
 
         auto decay_mode_enabled = [decay_modes_to_use](auto dm) -> bool {
           return std::find(decay_modes_to_use.begin(), decay_modes_to_use.end(), dm) != decay_modes_to_use.end();
@@ -692,43 +922,23 @@ namespace dkgen {
         */
 
         if(HNL_mass > 2*elec_mass && decay_mode_enabled(decay_modes::e_e_nu)) {
-          // double lep_minus_mass, double lep_plus_mass, double c1, double c2, double c3, double c4, double c5, double c6
           const double c1 = c1_final(params.is_majorana, flavour::e, flavour::e);
           const double c2 = c2_final(params.is_majorana, flavour::e, flavour::e);
           const double c3 = c3_final(params.is_majorana, flavour::e, flavour::e);
           const double c4 = c4_final(params.is_majorana, flavour::e, flavour::e);
           const double c5 = c5_final(params.is_majorana, flavour::e, flavour::e);
           const double c6 = c6_final(params.is_majorana, flavour::e, flavour::e);
+          // double lep_minus_mass, double lep_plus_mass, double c1, double c2, double c3, double c4, double c5, double c6
           auto rw_fn_pos = make_diff_decay_rate_function_to_nu_2lep(elec_mass, elec_mass, c1, c2, c3, c4, c5, c6, helicity_plus);
           auto rw_fn_neg = make_diff_decay_rate_function_to_nu_2lep(elec_mass, elec_mass, c1, c2, c3, c4, c5, c6, helicity_minus);
-          if(params.is_majorana) {
-            HNL_poshel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
-                { {nu_pdg,final_state},{elec_pdg,final_state},{-elec_pdg,final_state} }
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-            HNL_neghel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
-                { {-nu_pdg,final_state},{elec_pdg,final_state},{-elec_pdg,final_state} }
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-          }
-          else {
-            HNL_poshel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
-                { {nu_pdg,final_state},{elec_pdg,final_state},{-elec_pdg,final_state} }
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-            aHNL_poshel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
-                { {-nu_pdg,final_state},{-elec_pdg,final_state},{elec_pdg,final_state} }
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-            HNL_neghel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
-                { {nu_pdg,final_state},{elec_pdg,final_state},{-elec_pdg,final_state} }
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-            aHNL_neghel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
-                { {-nu_pdg,final_state},{-elec_pdg,final_state},{elec_pdg,final_state} }
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-          }
+          HNL_poshel_info.add_decay(
+              core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
+              { {nu_pdg,final_state},{elec_pdg,final_state},{-elec_pdg,final_state} }
+              }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
+          HNL_neghel_info.add_decay(
+              core::decay_mode{ decay_rates[decay_modes::e_e_nu]/total_decay_rate,
+              { {-nu_pdg,final_state},{elec_pdg,final_state},{-elec_pdg,final_state} }
+              }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
         }
         
         if(HNL_mass > elec_mass + muon_mass
@@ -742,33 +952,14 @@ namespace dkgen {
             const double c6 = c6_final(params.is_majorana, flavour::e, flavour::m);
             auto rw_fn_pos = make_diff_decay_rate_function_to_nu_2lep(elec_mass, muon_mass, c1, c2, c3, c4, c5, c6, helicity_plus);
             auto rw_fn_neg = make_diff_decay_rate_function_to_nu_2lep(elec_mass, muon_mass, c1, c2, c3, c4, c5, c6, helicity_minus);
-            if(params.is_majorana) {
-              HNL_poshel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
-                  {{nu_pdg,final_state},{elec_pdg,final_state},{-muon_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-              HNL_neghel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
-                  {{-nu_pdg,final_state},{elec_pdg,final_state},{-muon_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-            } else {
-              HNL_poshel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
-                  {{nu_pdg,final_state},{elec_pdg,final_state},{-muon_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-              aHNL_poshel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
-                  {{-nu_pdg,final_state},{-elec_pdg,final_state},{muon_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-              HNL_neghel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
-                  {{nu_pdg,final_state},{elec_pdg,final_state},{-muon_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-              aHNL_neghel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
-                  {{-nu_pdg,final_state},{-elec_pdg,final_state},{muon_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-            }
+            HNL_poshel_info.add_decay(
+                core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
+                {{nu_pdg,final_state},{elec_pdg,final_state},{-muon_pdg,final_state}}
+                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
+            HNL_neghel_info.add_decay(
+                core::decay_mode{ decay_rates[decay_modes::e_mu_nu]/total_decay_rate,
+                {{-nu_pdg,final_state},{elec_pdg,final_state},{-muon_pdg,final_state}}
+                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
           }
           {
             const double c1 = c1_final(params.is_majorana, flavour::m, flavour::e);
@@ -779,33 +970,14 @@ namespace dkgen {
             const double c6 = c6_final(params.is_majorana, flavour::m, flavour::e);
             auto rw_fn_pos = make_diff_decay_rate_function_to_nu_2lep(muon_mass, elec_mass, c1, c2, c3, c4, c5, c6, helicity_plus);
             auto rw_fn_neg = make_diff_decay_rate_function_to_nu_2lep(muon_mass, elec_mass, c1, c2, c3, c4, c5, c6, helicity_minus);
-            if(params.is_majorana) {
-              HNL_poshel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
-                  {{nu_pdg,final_state},{muon_pdg,final_state},{-elec_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-              HNL_neghel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
-                  {{-nu_pdg,final_state},{muon_pdg,final_state},{-elec_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-            } else {
-              HNL_poshel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
-                  {{nu_pdg,final_state},{muon_pdg,final_state},{-elec_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-              aHNL_poshel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
-                  {{-nu_pdg,final_state},{-muon_pdg,final_state},{elec_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-              HNL_neghel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
-                  {{nu_pdg,final_state},{muon_pdg,final_state},{-elec_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-              aHNL_neghel_info.add_decay(
-                  core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
-                  {{-nu_pdg,final_state},{-muon_pdg,final_state},{elec_pdg,final_state}}
-                  }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-            }
+            HNL_poshel_info.add_decay(
+                core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
+                {{nu_pdg,final_state},{muon_pdg,final_state},{-elec_pdg,final_state}}
+                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
+            HNL_neghel_info.add_decay(
+                core::decay_mode{ decay_rates[decay_modes::mu_e_nu]/total_decay_rate,
+                {{-nu_pdg,final_state},{muon_pdg,final_state},{-elec_pdg,final_state}}
+                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
           }
         }
         
@@ -830,37 +1002,20 @@ namespace dkgen {
                 core::decay_mode{ decay_rates[decay_modes::pi0_nu]/total_decay_rate,
                 {{-nu_pdg,final_state},{pion_0_pdg,final_state}}
                 }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_neg}));
-            aHNL_poshel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::pi0_nu]/total_decay_rate,
-                {{nu_pdg,final_state},{pion_0_pdg,final_state}}
-                }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_neg}));
-            aHNL_neghel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::pi0_nu]/total_decay_rate,
-                {{-nu_pdg,final_state},{pion_0_pdg,final_state}}
-                }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_pos}));
           }
         }
         
         if(HNL_mass > elec_mass+pion_pm_mass && decay_mode_enabled(decay_modes::e_pi)) {
           auto rw_fn_pos = make_diff_decay_rate_function_to_lepton_pseudoscalar(elec_mass, pion_pm_mass, helicity_plus);
           auto rw_fn_neg = make_diff_decay_rate_function_to_lepton_pseudoscalar(elec_mass, pion_pm_mass, helicity_minus);
-          const double majorana_factor = params.is_majorana ? 0.5 : 1.;
           HNL_poshel_info.add_decay(
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::e_pi]/total_decay_rate,
+              core::decay_mode{ decay_rates[decay_modes::e_pi]/total_decay_rate,
               {{elec_pdg,final_state},{pion_pm_pdg,final_state}}
               }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_pos}));
-          aHNL_poshel_info.add_decay( // remembering that aHNL == HNL for majorana
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::e_pi]/total_decay_rate,
-              {{-elec_pdg,final_state},{-pion_pm_pdg,final_state}}
-              }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_neg}));
           HNL_neghel_info.add_decay(
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::e_pi]/total_decay_rate,
+              core::decay_mode{ decay_rates[decay_modes::e_pi]/total_decay_rate,
               {{elec_pdg,final_state},{pion_pm_pdg,final_state}}
               }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_neg}));
-          aHNL_neghel_info.add_decay(
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::e_pi]/total_decay_rate,
-              {{-elec_pdg,final_state},{-pion_pm_pdg,final_state}}
-              }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_pos}));
         }
 
         if(HNL_mass > 2*muon_mass && decay_mode_enabled(decay_modes::mu_mu_nu)) {
@@ -872,69 +1027,46 @@ namespace dkgen {
           const double c6 = c6_final(params.is_majorana, flavour::m, flavour::m);
           auto rw_fn_pos = make_diff_decay_rate_function_to_nu_2lep(muon_mass, muon_mass, c1, c2, c3, c4, c5, c6, helicity_plus);
           auto rw_fn_neg = make_diff_decay_rate_function_to_nu_2lep(muon_mass, muon_mass, c1, c2, c3, c4, c5, c6, helicity_minus);
-          if(params.is_majorana) {
-            HNL_poshel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
-                {{nu_pdg,final_state},{muon_pdg,final_state},{-muon_pdg,final_state}}
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-            HNL_neghel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
-                {{-nu_pdg,final_state},{muon_pdg,final_state},{-muon_pdg,final_state}}
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-          } else {
-            HNL_poshel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
-                {{nu_pdg,final_state},{muon_pdg,final_state},{-muon_pdg,final_state}}
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-            aHNL_poshel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
-                {{-nu_pdg,final_state},{-muon_pdg,final_state},{muon_pdg,final_state}}
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-            HNL_neghel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
-                {{nu_pdg,final_state},{muon_pdg,final_state},{-muon_pdg,final_state}}
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
-            aHNL_neghel_info.add_decay(
-                core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
-                {{-nu_pdg,final_state},{-muon_pdg,final_state},{muon_pdg,final_state}}
-                }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
-          }
+          HNL_poshel_info.add_decay(
+              core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
+              {{nu_pdg,final_state},{muon_pdg,final_state},{-muon_pdg,final_state}}
+              }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_pos}));
+          HNL_neghel_info.add_decay(
+              core::decay_mode{ decay_rates[decay_modes::mu_mu_nu]/total_decay_rate,
+              {{-nu_pdg,final_state},{muon_pdg,final_state},{-muon_pdg,final_state}}
+              }.set_angular_threebody_dalitz_reweighter(core::angular_threebody_dalitz_function{rw_fn_neg}));
         }
 
         if(HNL_mass > muon_mass+pion_pm_mass && decay_mode_enabled(decay_modes::mu_pi)) {
           auto rw_fn_pos = make_diff_decay_rate_function_to_lepton_pseudoscalar(muon_mass, pion_pm_mass, helicity_plus);
           auto rw_fn_neg = make_diff_decay_rate_function_to_lepton_pseudoscalar(muon_mass, pion_pm_mass, helicity_minus);
-          const double majorana_factor = params.is_majorana ? 0.5 : 1.;
           HNL_poshel_info.add_decay(
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::mu_pi]/total_decay_rate,
+              core::decay_mode{ decay_rates[decay_modes::mu_pi]/total_decay_rate,
               {{muon_pdg,final_state},{pion_pm_pdg,final_state}}
               }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_pos}));
-          aHNL_poshel_info.add_decay( // remembering that aHNL == HNL for majorana
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::mu_pi]/total_decay_rate,
-              {{-muon_pdg,final_state},{-pion_pm_pdg,final_state}}
-              }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_neg}));
           HNL_neghel_info.add_decay(
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::mu_pi]/total_decay_rate,
+              core::decay_mode{ decay_rates[decay_modes::mu_pi]/total_decay_rate,
               {{muon_pdg,final_state},{pion_pm_pdg,final_state}}
               }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_neg}));
-          aHNL_neghel_info.add_decay(
-              core::decay_mode{ majorana_factor * decay_rates[decay_modes::mu_pi]/total_decay_rate,
-              {{-muon_pdg,final_state},{-pion_pm_pdg,final_state}}
-              }.set_twobody_dalitz_reweighter(core::twobody_dalitz_function{rw_fn_pos}));
 
         }
 
         HNL_poshel_info.finalise_decay_table();
         HNL_neghel_info.finalise_decay_table();
-        if(!params.is_majorana) { // otherwise exception thrown
-          aHNL_poshel_info.finalise_decay_table();
-          aHNL_neghel_info.finalise_decay_table();
-        }
         
-        ret.push_back(dkgen::core::particle_definition{pion_pm_pdg,pion_pm_mass,pion_pm_lt});
+        
+        
+        
+        
+        //////////////// REMAINING PARTICLES ////////////////////////////////////////////////////////////////////
+        
+        
+        
+        
+        
+        
         ret.push_back(dkgen::core::particle_definition{pion_0_pdg,pion_0_mass,pion_0_lt,self_conjugate});
         ret.push_back(dkgen::core::particle_definition{elec_pdg,elec_mass,elec_lt});
-        ret.push_back(dkgen::core::particle_definition{muon_pdg,muon_mass,muon_lt});
         ret.push_back(dkgen::core::particle_definition{nu_pdg,0.,-1.});
 
         return ret;
