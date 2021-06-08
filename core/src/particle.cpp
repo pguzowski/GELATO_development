@@ -1,7 +1,7 @@
 #include "dkgen/core/particle.hpp"
 
 #include <algorithm>
-
+#include <string>
 
 dkgen::core::decay_mode::decay_mode(double br, daughter_vector_t dgt) :
   branching_ratio{br},
@@ -67,13 +67,13 @@ const dkgen::core::decay_mode& dkgen::core::particle_definition::generate_decay_
   if(sum_branching_ratios.empty()) {
     throw std::runtime_error("Decay table has not been finalised");
   }
-  if(sum_branching_ratios.back() > 1.) {
-    throw std::runtime_error("Branching ratio sum > 1");
+  if(sum_branching_ratios.back() > 1.0000001) {
+    throw std::runtime_error("Branching ratio sum > 1.0000001 : "+std::to_string(sum_branching_ratios.back()-1.));
   }
   if(decay_table.size() == 1 && sum_branching_ratios.back() == 1.) {
     return decay_table.at(0);
   }
-  const double x = rng();
+  const double x = (sum_branching_ratios.back() > 1. ? sum_branching_ratios.back() : 1.) * rng();
   for(size_t i = 0; i < decay_table.size(); ++i) {
     if(x < sum_branching_ratios.at(i)) {
       return decay_table.at(i);

@@ -459,10 +459,10 @@ namespace dkgen {
         
         auto I_h1 = [sqrtkl,integrate,integrate2](double x, double y, double z, double f0, double lam_plus, double lam_0, int plus_minus) {
           const size_t size = 10000;
-          gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
-          auto s_integrand = [sqrtkl,plus_minus,f0,lam_plus,lam_0,x,y,z,integrate2](double s) {
+          //gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
+          auto s_integrand = [sqrtkl,plus_minus,f0,lam_plus,lam_0,x,y,z,integrate,integrate2](double s) {
             const size_t size = 10000;
-            gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
+            //gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
             auto t_integrand = [sqrtkl,plus_minus,s,f0,lam_plus,lam_0,x,y,z](double t) {
               const double u = 1. + x + y + z - s - t;
               if(std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) {
@@ -492,12 +492,15 @@ namespace dkgen {
               std::cout << "s "<<s<<" midpt "<<midpt<<" delta "<<delta<< " sqrtkl(s,y,z) "<<sqrtkl(s,y,z)<<" sqrtkl(1,s,z) "<<sqrtkl(1,s,z)<<std::endl;
                 throw std::runtime_error("nan in integration limits");
             }
+            return integrate(t_integrand, midpt - delta, midpt + delta);
+            gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
             auto ret = integrate2(t_integrand, midpt - delta, midpt + delta, ws, size);
             gsl_integration_workspace_free(ws);
             //std::cout << "s_integrand " << ret << std::endl;
             return ret;
           };
-          (void)integrate;
+          return integrate(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
+          gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
           auto ret =  integrate2(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2), ws, size);
           gsl_integration_workspace_free(ws);
           return ret;
@@ -595,7 +598,8 @@ namespace dkgen {
         ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt});
         auto& charged_kaon = ret.back();
         
-        if(kaon_pm_mass > HNL_mass + muon_mass && production_mode_enabled(production_modes::k_mu2)) {
+        if(kaon_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu2)) {
           charged_kaon.add_decay({
               K_decay_rates_poshel[production_modes::k_mu2]/total_kaon_decay_rate,
               {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state}}
@@ -605,7 +609,8 @@ namespace dkgen {
               {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state}}
           });
         }
-        if(kaon_pm_mass > HNL_mass + elec_mass && production_mode_enabled(production_modes::k_e2)) {
+        if(kaon_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e2)) {
           charged_kaon.add_decay({
               K_decay_rates_poshel[production_modes::k_e2]/total_kaon_decay_rate,
               {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state}}
@@ -615,7 +620,8 @@ namespace dkgen {
               {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state}}
           });
         }
-        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && production_mode_enabled(production_modes::k_mu3)) {
+        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu3)) {
           charged_kaon.add_decay({
               K_decay_rates_poshel[production_modes::k_mu3]/total_kaon_decay_rate,
               {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
@@ -625,7 +631,8 @@ namespace dkgen {
               {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
           });
         }
-        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && production_mode_enabled(production_modes::k_e3)) {
+        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e3)) {
           charged_kaon.add_decay({
               K_decay_rates_poshel[production_modes::k_e3]/total_kaon_decay_rate,
               {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
