@@ -32,7 +32,7 @@ namespace dkgen {
       };
       
       enum class decay_modes { nu_nu_nu, e_e_nu, e_mu_nu, mu_e_nu, mu_mu_nu, e_pi, mu_pi, pi0_nu };
-      enum class production_modes { k_mu2, k_e2, k_e3, pi_mu, mu_e3 };
+      enum class production_modes { k_mu2, k_mu3, k_e2, k_e3, pi_mu, mu_e3 };
       
       struct model_parameters {
         double HNL_mass;
@@ -52,7 +52,19 @@ namespace dkgen {
             decay_modes::mu_pi,
             decay_modes::pi0_nu,  
           },
+          std::vector<production_modes> production_modes_to_use = {
+            production_modes::k_mu2,
+            production_modes::k_mu3,
+            production_modes::k_e2,
+            production_modes::k_e3,
+            production_modes::pi_mu,
+            production_modes::mu_e3,
+          },
           dkgen::core::driver::particle_map input = {}) {
+
+        if(decay_modes_to_use.empty() || production_modes_to_use.empty()) {
+          throw std::runtime_error("No HNL production or decay modes requested!");
+        }
 
         auto ret = input;
 
@@ -100,6 +112,7 @@ namespace dkgen {
         // only implementing total decay rates for now;
         constexpr double pi3_inv = 1./M_PI/M_PI/M_PI; // 1/pi^3
 
+        enum class flavour { e, m, t };
         struct derived_params {
           double sum_U2;
           double m5;
@@ -109,6 +122,16 @@ namespace dkgen {
             sum_U2 = std::pow(p.U_e4,2) + std::pow(p.U_m4,2) + std::pow(p.U_t4,2);
             m5 = std::pow(p.HNL_mass,5);
             m3 = std::pow(p.HNL_mass,3);
+          }
+          double U2(flavour fl) const {
+            switch(fl) {
+              case flavour::e:
+                return std::pow(raw_params.U_e4,2);
+              case flavour::m:
+                return std::pow(raw_params.U_m4,2);
+              case flavour::t:
+                return std::pow(raw_params.U_t4,2);
+            }
           }
         };
         const derived_params dparams(params);
@@ -229,7 +252,6 @@ namespace dkgen {
 
         const double gL = conf.physical_params().sin2thW  - 0.5;
         const double gR = conf.physical_params().sin2thW;
-        enum class flavour { e, m, t };
         auto c1_nu_dirac = [&params,gL](flavour l1, flavour l2) { 
           double tot = 0.;
           for(auto fl: { flavour::e, flavour::m, flavour::t }) {
@@ -317,6 +339,7 @@ namespace dkgen {
 
         const double f2_pion = conf.physical_params().pion_decay_constant;
         const double CKM_Vud2 = std::pow(conf.physical_params().CKM_Vud,2);
+        const double CKM_Vus2 = std::pow(conf.physical_params().CKM_Vus,2);
 
         // total decay rates are helicity-independent (HNL_lifetime will apply to both helicities)
         std::map<decay_modes, double> decay_rates;
@@ -420,9 +443,202 @@ namespace dkgen {
         const bool self_conjugate = true;
         const bool final_state = true;
         const bool NOT_final_state = !final_state;
-        ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt}
-            .add_decay({1.,{{muon_pdg,final_state},{HNL_pdg_poshel,NOT_final_state}}})
-            .finalise_decay_table());
+
+        const int helicity_plus = +1;
+        const int helicity_minus = -1;
+        
+        auto integrate2 = [](auto fn, double low, double high,
+            gsl_integration_workspace * const ws, size_t limit) -> double { 
+          double result, error;
+          //size_t neval;
+          gsl_function_wrapper<decltype(fn)> wrapped_fn(fn);
+          gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);   
+          gsl_integration_qags(func, low, high, 1e-2, 1e-2, limit,  ws, &result, &error);
+          return result;
+        };
+        
+        auto I_h1 = [sqrtkl,integrate,integrate2](double x, double y, double z, double f0, double lam_plus, double lam_0, int plus_minus) {
+          const size_t size = 10000;
+          gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
+          auto s_integrand = [sqrtkl,plus_minus,f0,lam_plus,lam_0,x,y,z,integrate2](double s) {
+            const size_t size = 10000;
+            gsl_integration_workspace * ws = gsl_integration_workspace_alloc(size);
+            auto t_integrand = [sqrtkl,plus_minus,s,f0,lam_plus,lam_0,x,y,z](double t) {
+              const double u = 1. + x + y + z - s - t;
+              if(std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) {
+                throw std::runtime_error("will get nan in integration");
+              }
+              const double sqrt_kl_uyz = (std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) ? 0. : plus_minus * sqrtkl(u,y,z);
+              const double A = 0.5 * (1. + y - t) * (1. + z - s - plus_minus * sqrtkl(1,z,s))
+                - 0.5 * (u - y - z - sqrt_kl_uyz);
+              const double B = 0.5 * (y + z) * (u - y - z) + 2 * x * y - 0.5 * (y - z) * sqrt_kl_uyz;
+              const double C = z * (1 + y - t) + (y + 0.5 * sqrt_kl_uyz) * (1 + z - s);
+              const double F = f0 * (1. + lam_plus * u / x);
+              const double G = f0 * (1. + lam_plus * u / x - (lam_plus - lam_0) * (1. + 1. / x));
+              //std::cout << "t_integrand " << A << " " << B << " " << C << " " << F << " " << G << " "<<F*F*A + G*G*B - F*G*C<< std::endl;
+              if(std::isnan(A) || std::isnan(B) || std::isnan(C) || std::isnan(F) || std::isnan(G)) {
+                std::cout<<"s " << s<<" t "<<t<<" u " <<u <<" x "<<x<<" y "<<y<<" z "<<z
+                  <<" f0 "<<f0<<" l+ "<<lam_plus<<" l0 "<<lam_0
+                  <<" kl_uyz " <<sqrt_kl_uyz<< " kl_1zs "<<sqrtkl(1,z,s)<<" "<<std::endl;
+                std::cout << std::sqrt(u) <<" "<< std::sqrt(y) + std::sqrt(z)<<std::endl;
+                std::cout << (1. + s*s + t*t + 2.*s* (-1. + t - x) + 2.*x + x*x - 2.*t*(1. + x) - 4*y*z) << std::endl;
+                throw std::runtime_error("nan in integration");
+              }
+              return F*F*A + G*G*B - F*G*C;
+            };
+            const double midpt = x + z + (1. - s - z) * (s - y + x) / 2. / s;
+            const double delta = sqrtkl(s,x,y) * sqrtkl(1,s,z) / 2. / s;
+            if(std::isnan(midpt) || std::isnan(delta)) {
+              std::cout << "s "<<s<<" midpt "<<midpt<<" delta "<<delta<< " sqrtkl(s,y,z) "<<sqrtkl(s,y,z)<<" sqrtkl(1,s,z) "<<sqrtkl(1,s,z)<<std::endl;
+                throw std::runtime_error("nan in integration limits");
+            }
+            auto ret = integrate2(t_integrand, midpt - delta, midpt + delta, ws, size);
+            gsl_integration_workspace_free(ws);
+            //std::cout << "s_integrand " << ret << std::endl;
+            return ret;
+          };
+          (void)integrate;
+          auto ret =  integrate2(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2), ws, size);
+          gsl_integration_workspace_free(ws);
+          return ret;
+        };
+
+        auto P_decay_rate_to_leptons = [&dparams,sqrtkl,HNL_mass](flavour fl, double sm_nu_br, double pseudoscalar_mass, double lep_mass, int plus_minus) {
+          const double xi_N = std::pow(HNL_mass/pseudoscalar_mass,2);
+          const double xi_l = std::pow(lep_mass/pseudoscalar_mass,2);
+          const double sqrt_kl = sqrtkl(1.,xi_N,xi_l);
+          const double sub = xi_N - xi_l;
+          return dparams.U2(fl) * sqrt_kl * (xi_l + xi_N - std::pow(sub,2) + plus_minus * sub * sqrt_kl)
+            / (2.* xi_l * std::pow(1. - xi_l,2)) * sm_nu_br;
+        };
+        auto P_decay_rate_to_semilepton_Pprime = [&dparams,HNL_mass,I_h1](flavour fl, double sm_nu_br,
+            double pseudoscalar_mass, double lep_mass, double pprime_mass, double CKM_V2,
+            double f0_P_Pprime, double lam_plus_P_Pprime, double lam_0_P_Pprime,
+            int plus_minus) {
+          const double xi_h = std::pow(pprime_mass/pseudoscalar_mass,2);
+          const double xi_N = std::pow(HNL_mass/pseudoscalar_mass,2);
+          const double xi_l = std::pow(lep_mass/pseudoscalar_mass,2);
+          return dparams.U2(fl) * CKM_V2 * sm_nu_br
+            * I_h1(xi_h, xi_l, xi_N, f0_P_Pprime, lam_plus_P_Pprime, lam_0_P_Pprime, plus_minus)
+            / I_h1(xi_h, xi_l, 0,    f0_P_Pprime, lam_plus_P_Pprime, lam_0_P_Pprime, plus_minus);
+        };
+
+        const double kaon_pm_m2_BR = 0.6356;
+        const double kaon_pm_e2_BR = 0.0016;
+        const double kaon_pm_m3_BR = 0.0335;
+        const double kaon_pm_e3_BR = 0.0507;
+        //const double kaon_0L_m3_BR = 0.2704;
+        //const double kaon_0L_e3_BR = 0.4055;
+        //const double pion_pm_m2_BR = 0.9998;
+        //const double pion_pm_e2_BR = 0.0001;
+        //
+        const double f0_k_pi = 0.9706; // https://arxiv.org/abs/1902.08191
+        const double lam_plus_k_pi = 0.0309; // PDG
+        const double lam_0_k_pi = 0.0173; // PDG
+
+        auto production_mode_enabled = [production_modes_to_use](auto pm) -> bool {
+          return std::find(production_modes_to_use.begin(), production_modes_to_use.end(), pm) != production_modes_to_use.end();
+        };
+        
+        double total_kaon_decay_rate = 0.;
+        std::map<production_modes,double> K_decay_rates_poshel, K_decay_rates_neghel;
+        if(kaon_pm_mass > HNL_mass + muon_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu2)) {
+          const double decay_rate_pos = P_decay_rate_to_leptons(
+              flavour::m, kaon_pm_m2_BR, kaon_pm_mass, muon_mass, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_mu2] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_leptons(
+              flavour::m, kaon_pm_m2_BR, kaon_pm_mass, muon_mass, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_mu2] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e2)) {
+          const double decay_rate_pos = P_decay_rate_to_leptons(
+              flavour::e, kaon_pm_e2_BR, kaon_pm_mass, elec_mass, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_e2] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_leptons(
+              flavour::e, kaon_pm_e2_BR, kaon_pm_mass, elec_mass, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_e2] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && params.U_m4 > 0.
+            && production_mode_enabled(production_modes::k_mu3)) {
+          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
+              flavour::m, kaon_pm_m3_BR, kaon_pm_mass, muon_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_mu3] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
+              flavour::m, kaon_pm_m3_BR, kaon_pm_mass, muon_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_mu3] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && params.U_e4 > 0.
+            && production_mode_enabled(production_modes::k_e3)) {
+          const double decay_rate_pos = P_decay_rate_to_semilepton_Pprime(
+              flavour::e, kaon_pm_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_plus);
+          K_decay_rates_poshel[production_modes::k_e3] = decay_rate_pos;
+          const double decay_rate_neg = P_decay_rate_to_semilepton_Pprime(
+              flavour::e, kaon_pm_e3_BR, kaon_pm_mass, elec_mass, pion_0_mass,
+              CKM_Vus2, f0_k_pi, lam_plus_k_pi, lam_0_k_pi, helicity_minus);
+          K_decay_rates_neghel[production_modes::k_e3] = decay_rate_neg;
+          total_kaon_decay_rate += decay_rate_pos + decay_rate_neg;
+        }
+        if(total_kaon_decay_rate == 0.) {
+          throw std::runtime_error("Unable to produce HNLs for these parameters and options");
+        }
+        
+        
+        
+        ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt});
+        auto& charged_kaon = ret.back();
+        
+        if(kaon_pm_mass > HNL_mass + muon_mass && production_mode_enabled(production_modes::k_mu2)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_mu2]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_mu2]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state}}
+          });
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass && production_mode_enabled(production_modes::k_e2)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_e2]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_e2]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state}}
+          });
+        }
+        if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && production_mode_enabled(production_modes::k_mu3)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_mu3]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_mu3]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+        }
+        if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && production_mode_enabled(production_modes::k_e3)) {
+          charged_kaon.add_decay({
+              K_decay_rates_poshel[production_modes::k_e3]/total_kaon_decay_rate,
+              {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+          charged_kaon.add_decay({
+              K_decay_rates_neghel[production_modes::k_e3]/total_kaon_decay_rate,
+              {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
+          });
+        }
+
+
+        charged_kaon.finalise_decay_table();
+
 
 
         // have to define separate helicity states
@@ -430,25 +646,25 @@ namespace dkgen {
         ret.push_back(dkgen::core::particle_definition{
             HNL_pdg_poshel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
             });
-        size_t HNL_poshel_loc = ret.size();
+        const size_t HNL_poshel_loc = ret.size()-1;
         if(!params.is_majorana) {
           ret.push_back(dkgen::core::particle_definition{
               -HNL_pdg_poshel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
               });
         }
-        size_t aHNL_poshel_loc = ret.size(); // == automatically HNL_poshel_info for Majorana
+        const size_t aHNL_poshel_loc = ret.size()-1; // == automatically HNL_poshel_info for Majorana
         ret.push_back(dkgen::core::particle_definition{
             HNL_pdg_neghel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
             });
-        size_t HNL_neghel_loc = ret.size();
+        const size_t HNL_neghel_loc = ret.size()-1;
         if(!params.is_majorana) {
           ret.push_back(dkgen::core::particle_definition{
               -HNL_pdg_neghel, HNL_mass, HNL_lifetime, params.is_majorana? self_conjugate : !self_conjugate
               });
         }
-        size_t aHNL_neghel_loc = ret.size(); // == automatically HNL_neghel_info for Majorana
+        const size_t aHNL_neghel_loc = ret.size()-1; // == automatically HNL_neghel_info for Majorana
 
-        // cannot directly use references to ret.back(), because vector expansion might invalidate iterators
+        // cannot directly use references to ret.back(), because push_back() can invalidate iterators
         auto& HNL_poshel_info = *std::next(ret.begin(), HNL_poshel_loc);
         auto& aHNL_poshel_info = *std::next(ret.begin(), aHNL_poshel_loc);
         auto& HNL_neghel_info = *std::next(ret.begin(), HNL_neghel_loc);
@@ -468,9 +684,6 @@ namespace dkgen {
         }
         */
 
-        const int helicity_plus = +1;
-        const int helicity_minus = -1;
-        
         if(HNL_mass > 2*elec_mass && decay_mode_enabled(decay_modes::e_e_nu)) {
           // double lep_minus_mass, double lep_plus_mass, double c1, double c2, double c3, double c4, double c5, double c6
           const double c1 = c1_final(params.is_majorana, flavour::e, flavour::e);

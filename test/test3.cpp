@@ -13,7 +13,7 @@
 int main(int argc, char** argv) {
   size_t n_to_gen = 10;
   double mass = 0.140, Ue4 = 0, Um4 = 0, Ut4 = 0;
-  bool force = false, majorana = false;
+  bool force = false, majorana = false, debug = false;
   for(int i = 0; i < argc /* as -n option will have argument */; ++i) {
     if(i+1 < argc && std::string(argv[i]) == "-n") { // number to gen
       n_to_gen = std::atoll(argv[i+1]);
@@ -48,6 +48,10 @@ int main(int argc, char** argv) {
       majorana = true;
       continue;
     }
+    if(std::string(argv[i]) == "-d") { // 'e' for Ettora Majorana (m/M already taken)
+      debug = true;
+      continue;
+    }
   }
   if(Ue4 == 0. && Um4 == 0. && Ut4 == 0.) {
     std::cerr << " Must set a mixing angle -E/-M/-T" << std::endl;
@@ -70,6 +74,21 @@ int main(int argc, char** argv) {
   //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
   const dkgen::physics::heavy_neutral_leptons::model_parameters params{mass, Ue4, Um4, Ut4, majorana};
   auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf);
+  
+  if(debug) {
+    for(auto p : particles) {
+      std::cout << "particle "<<p.pdg()<<std::endl;
+      for(auto d : p.get_decay_table()) {
+        std::cout << "  decay BR="<<d.branching_ratio;
+        for(auto m : d.daughters) {
+          std::cout <<" " << m.first;
+        }
+        std::cout <<std::endl;
+      }
+    }
+    return 0;
+  }
+  
   driver.set_particle_content(particles);
 
   auto& kaon = conf.physical_params().find_particle("kaon_pm");

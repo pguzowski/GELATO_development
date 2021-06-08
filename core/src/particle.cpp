@@ -2,10 +2,6 @@
 
 #include <algorithm>
 
-#define DEBUG
-#ifdef DEBUG
-#include <iostream>
-#endif
 
 dkgen::core::decay_mode::decay_mode(double br, daughter_vector_t dgt) :
   branching_ratio{br},
@@ -31,12 +27,6 @@ dkgen::core::particle_definition::particle_definition(int pdgc, double m, double
       
 dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(const decay_mode& dm) {
   if(sum_branching_ratios.size() > 0) {
-#ifdef DEBUG
-    std::cerr << sum_branching_ratios.size() << std::endl;
-    for(auto s : sum_branching_ratios) {
-      std::cerr << "sum: " << s << std::endl;
-    }
-#endif
     throw std::runtime_error("particle_definition::add_decay(const&): Decay table has been finalised already!");
   }
   if(dm.branching_ratio < 0.) {
