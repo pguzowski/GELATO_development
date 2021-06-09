@@ -123,6 +123,7 @@ namespace dkgen {
         constexpr double pi3_inv = 1./M_PI/M_PI/M_PI; // 1/pi^3
 
         enum class flavour { e, m, t };
+        // so we don't have to constantly calculate these
         struct derived_params {
           double sum_U2;
           double m5;
@@ -670,9 +671,9 @@ namespace dkgen {
         
         const double decay_rate_to_3nu = dparams.sum_U2 * gfermi2 * dparams.m5 * pi3_inv / 96.;
 
-        auto decay_rate_to_nu_pseudoscalar = [&dparams, gfermi2, HNL_mass, I1_2](double pseudoscalar_mass, double f2) {
+        auto decay_rate_to_nu_pseudoscalar = [&dparams, gfermi2, HNL_mass](double pseudoscalar_mass, double f2) {
           const double xi_p = std::pow(pseudoscalar_mass / HNL_mass, 2);
-          return dparams.sum_U2 * gfermi2 * f2 * dparams.m3 * I1_2(0.,xi_p) / 16./ M_PI;
+          return dparams.sum_U2 * gfermi2 * f2 * dparams.m3 * std::pow(1-xi_p,2) / 16./ M_PI;
         };
         
         auto decay_rate_to_lepton_pseudoscalar =
@@ -725,12 +726,13 @@ namespace dkgen {
 
         const double gL = conf.physical_params().sin2thW  - 0.5;
         const double gR = conf.physical_params().sin2thW;
-        auto c1_nu_dirac = [&params,gL](flavour l1, flavour l2) { 
+        auto c1_nu_dirac = [&dparams,gL](flavour l1, flavour l2) { 
           double tot = 0.;
           for(auto fl: { flavour::e, flavour::m, flavour::t }) {
-            const double U = (fl==flavour::e ? params.U_e4 : (fl==flavour::m? params.U_m4 : params.U_t4));
-            //                                        vv  ----- l1 (cf l2 in c2_nubar_dirac)
-            tot += U*U *((l1==l2 ? gL*gL : 0.) + (fl==l1?1:0)*(1.+(l1==l2?gL:0.)));
+            const double U2 = dparams.U2(fl);
+            //                                       vv  ----- l1 (cf l2 in c2_nubar_dirac)
+            tot += U2 *((l1==l2 ? gL*gL : 0.) + (fl==l1?1:0)*(1.+(l1==l2?2*gL:0.)));
+            // (1 + 2 gL) in all the other formulas, unlike 1905.00284.pdf
           }
           return tot;
         };
@@ -740,32 +742,33 @@ namespace dkgen {
         auto c2_nu_dirac = [&dparams,gR](flavour l1, flavour l2) {
           return l1==l2 ? dparams.sum_U2 * gR*gR : 0.;
         };
-        auto c2_nubar_dirac = [&params,gL](flavour l1, flavour l2) { 
+        auto c2_nubar_dirac = [&dparams,gL](flavour l1, flavour l2) { 
           double tot = 0.;
           for(auto fl: { flavour::e, flavour::m, flavour::t }) {
-            const double U = (fl==flavour::e ? params.U_e4 : (fl==flavour::m? params.U_m4 : params.U_t4));
-            //                                        vv  ----- l2 (cf l1 in c1_nu_dirac)
-            tot += U*U *((l1==l2 ? gL*gL : 0.) + (fl==l2?1:0)*(1.+(l1==l2?gL:0.)));
+            const double U2 = dparams.U2(fl);
+            //                                       vv  ----- l2 (cf l1 in c1_nu_dirac)
+            tot += U2 *((l1==l2 ? gL*gL : 0.) + (fl==l2?1:0)*(1.+(l1==l2?2*gL:0.)));
+            // (1 + 2 gL) in all the other formulas, unlike 1905.00284.pdf
           }
           return tot;
         };
-        auto c3_nu_dirac = [&params,gL,gR](flavour l1, flavour l2) { 
+        auto c3_nu_dirac = [&dparams,gL,gR](flavour l1, flavour l2) { 
           if(l1 != l2) return 0.;
           double tot = 0.;
           for(auto fl: { flavour::e, flavour::m, flavour::t }) {
-            const double U = (fl==flavour::e ? params.U_e4 : (fl==flavour::m? params.U_m4 : params.U_t4));
-            //                 vv  ----- l2 (cf l1 in c3_nubar_dirac)
-            tot += U*U * ((fl==l2? 1. : 0.) + gL);
+            const double U2 = dparams.U2(fl);
+            //                vv  ----- l2 (cf l1 in c3_nubar_dirac)
+            tot += U2 * ((fl==l2? 1. : 0.) + gL);
           }
           return tot*gR;
         };
-        auto c3_nubar_dirac = [&params,gL,gR](flavour l1, flavour l2) { 
+        auto c3_nubar_dirac = [&dparams,gL,gR](flavour l1, flavour l2) { 
           if(l1 != l2) return 0.;
           double tot = 0.;
           for(auto fl: { flavour::e, flavour::m, flavour::t }) {
-            const double U = (fl==flavour::e ? params.U_e4 : (fl==flavour::m? params.U_m4 : params.U_t4));
-            //                 vv  ----- l1 (cf l2 in c3_nu_dirac)
-            tot += U*U * ((fl==l1? 1. : 0.) + gL);
+            const double U2 = dparams.U2(fl);
+            //                vv  ----- l1 (cf l2 in c3_nu_dirac)
+            tot += U2 * ((fl==l1? 1. : 0.) + gL);
           }
           return tot*gR;
         };
@@ -820,17 +823,10 @@ namespace dkgen {
           std::cout << "Add hnl->nu_nu_nu r="<<total_decay_rate<<std::endl;
 #endif
         if(HNL_mass > 2*elec_mass) {
-          const double decay_rate = params.is_majorana
-            ?
-            decay_rate_to_nu_2lep(elec_mass, elec_mass,
-                c1_nu_major(flavour::e,flavour::e),
-                c2_nu_major(flavour::e,flavour::e),
-                c3_nu_major(flavour::e,flavour::e))
-            :
-            decay_rate_to_nu_2lep(elec_mass, elec_mass,
-                c1_nu_dirac(flavour::e,flavour::e),
-                c2_nu_dirac(flavour::e,flavour::e),
-                c3_nu_dirac(flavour::e,flavour::e));
+          const double c1 = c1_final(params.is_majorana, flavour::e, flavour::e);
+          const double c2 = c2_final(params.is_majorana, flavour::e, flavour::e);
+          const double c3 = c3_final(params.is_majorana, flavour::e, flavour::e);
+          const double decay_rate = decay_rate_to_nu_2lep(elec_mass, elec_mass, c1, c2, c3);
           total_decay_rate += decay_rate;
           decay_rates[decay_modes::e_e_nu] = decay_rate;
 #ifdef DEBUG
@@ -838,31 +834,28 @@ namespace dkgen {
 #endif
         }
         if(HNL_mass > elec_mass + muon_mass) {
-          const double decay_rate1 = params.is_majorana
-            ? decay_rate_to_nu_2lep(elec_mass, muon_mass,
-                c1_nu_major(flavour::e,flavour::m),
-                c2_nu_major(flavour::e,flavour::m),
-                c3_nu_major(flavour::e,flavour::m))
-            : decay_rate_to_nu_2lep(elec_mass, muon_mass,
-                c1_nu_dirac(flavour::e,flavour::m),
-                c2_nu_dirac(flavour::e,flavour::m),
-                c3_nu_dirac(flavour::e,flavour::m));
-          const double decay_rate2 = params.is_majorana
-            ? decay_rate_to_nu_2lep(muon_mass, elec_mass,
-                c1_nu_major(flavour::m,flavour::e),
-                c2_nu_major(flavour::m,flavour::e),
-                c3_nu_major(flavour::m,flavour::e))
-            : decay_rate_to_nu_2lep(muon_mass, elec_mass,
-                c1_nu_dirac(flavour::m,flavour::e),
-                c2_nu_dirac(flavour::m,flavour::e),
-                c3_nu_dirac(flavour::m,flavour::e));
-          total_decay_rate += decay_rate1 + decay_rate2;
-          decay_rates[decay_modes::e_mu_nu] = decay_rate1;
-          decay_rates[decay_modes::mu_e_nu] = decay_rate2;
+          {
+            const double c1 = c1_final(params.is_majorana, flavour::e, flavour::m);
+            const double c2 = c2_final(params.is_majorana, flavour::e, flavour::m);
+            const double c3 = c3_final(params.is_majorana, flavour::e, flavour::m);
+            const double decay_rate1 = decay_rate_to_nu_2lep(elec_mass, muon_mass, c1, c2, c3);
+            total_decay_rate += decay_rate1;
+            decay_rates[decay_modes::e_mu_nu] = decay_rate1;
 #ifdef DEBUG
-          std::cout << "Add hnl->e_mu_nu r="<<decay_rate1<<std::endl;
-          std::cout << "Add hnl->mu_e_nu r="<<decay_rate2<<std::endl;
+            std::cout << "Add hnl->e_mu_nu r="<<decay_rate1<<std::endl;
 #endif
+          }
+          {
+            const double c1 = c1_final(params.is_majorana, flavour::m, flavour::e);
+            const double c2 = c2_final(params.is_majorana, flavour::m, flavour::e);
+            const double c3 = c3_final(params.is_majorana, flavour::m, flavour::e);
+            const double decay_rate2 = decay_rate_to_nu_2lep(elec_mass, muon_mass, c1, c2, c3);
+            decay_rates[decay_modes::mu_e_nu] = decay_rate2;
+            total_decay_rate += decay_rate2;
+#ifdef DEBUG
+            std::cout << "Add hnl->e_mu_nu r="<<decay_rate2<<std::endl;
+#endif
+          }
         }
         if(HNL_mass > pion_0_mass) {
           const double decay_rate = (params.is_majorana ? 1. : 0.5) * decay_rate_to_nu_pseudoscalar(pion_0_mass, f2_pion);
@@ -882,17 +875,10 @@ namespace dkgen {
 #endif
         }
         if(HNL_mass > 2*muon_mass) {
-          const double decay_rate = params.is_majorana
-            ?
-            decay_rate_to_nu_2lep(muon_mass, muon_mass,
-                c1_nu_major(flavour::m,flavour::m),
-                c2_nu_major(flavour::m,flavour::m),
-                c3_nu_major(flavour::m,flavour::m))
-            :
-            decay_rate_to_nu_2lep(muon_mass, muon_mass,
-                c1_nu_dirac(flavour::m,flavour::m),
-                c2_nu_dirac(flavour::m,flavour::m),
-                c3_nu_dirac(flavour::m,flavour::m));
+          const double c1 = c1_final(params.is_majorana, flavour::m, flavour::m);
+          const double c2 = c2_final(params.is_majorana, flavour::m, flavour::m);
+          const double c3 = c3_final(params.is_majorana, flavour::m, flavour::m);
+          const double decay_rate = decay_rate_to_nu_2lep(muon_mass, muon_mass, c1, c2, c3);
           total_decay_rate += decay_rate;
           decay_rates[decay_modes::mu_mu_nu] = decay_rate;
 #ifdef DEBUG
