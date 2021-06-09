@@ -54,6 +54,7 @@ namespace dkgen {
           // all "visible" final states
           const std::vector<decay_modes>& decay_modes_to_use = all_decay_modes,
           const std::vector<production_modes>& production_modes_to_use = all_production_modes,
+          bool ensure_observation_possible = true,
           dkgen::core::driver::particle_map input = {}) {
 
         if(decay_modes_to_use.empty() || production_modes_to_use.empty()) {
@@ -601,7 +602,8 @@ namespace dkgen {
 
         
 
-        if(total_kaon_decay_rate + total_k0_decay_rate + total_pion_decay_rate + total_muon_decay_rate == 0.) {
+        if(ensure_observation_possible &&
+            total_kaon_decay_rate + total_k0_decay_rate + total_pion_decay_rate + total_muon_decay_rate == 0.) {
           throw std::runtime_error("Unable to produce HNLs for these parameters and options");
         }
 
@@ -1079,7 +1081,8 @@ namespace dkgen {
           }
 
         }
-        if(HNL_poshel_info.get_decay_table().empty() && HNL_neghel_info.get_decay_table().empty()) {
+        if(ensure_observation_possible &&
+            HNL_poshel_info.get_decay_table().empty() && HNL_neghel_info.get_decay_table().empty()) {
           throw std::runtime_error("Unable to have decaying HNLs for these parameters and options");
         }
 
