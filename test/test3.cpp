@@ -73,7 +73,9 @@ int main(int argc, char** argv) {
   //const std::string metadata{(std::ostringstream() << "model_theta=" << scalar_theta).str()};
   //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
   const dkgen::physics::heavy_neutral_leptons::model_parameters params{mass, Ue4, Um4, Ut4, majorana};
-  auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf);
+  auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf,
+      dkgen::physics::heavy_neutral_leptons::all_decay_modes,
+      {dkgen::physics::heavy_neutral_leptons::production_modes::mu_e});
   
   if(debug) {
     for(auto p : particles) {
@@ -107,7 +109,6 @@ int main(int argc, char** argv) {
           {0.,0.,0.,0.}, // production position
           {0.,0.,0.,0.}, // decay position
           {0.,0.,kmom,std::sqrt(kmom*kmom + kmass*kmass)}, // momentum
-          dkgen::core::decaying_particle_info::state_type::non_final // state
         },
         [&rng, &gen]()->double{return rng(gen);});
     if(res) {

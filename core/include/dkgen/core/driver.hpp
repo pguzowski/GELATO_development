@@ -10,7 +10,7 @@
 
 namespace dkgen {
   namespace core {
-    class decaying_particle_info;
+    class particle_info;
     class particle_definition;
     class driver {
       public:
@@ -23,7 +23,7 @@ namespace dkgen {
         driver& set_config(const config& conf);
         
         // main event loop: generate decay of initial particle
-        particle_history generate_decays(decaying_particle_info&& initial_decay, random_uniform_0_1_generator rng) const;
+        particle_history generate_decays(const particle_info& initial_decay, random_uniform_0_1_generator rng) const;
         
       private:
         using decaying_particle_info_ptr = decaying_particle_info*;

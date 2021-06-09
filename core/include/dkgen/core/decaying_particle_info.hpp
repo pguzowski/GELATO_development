@@ -8,6 +8,34 @@
 
 namespace dkgen {
   namespace core {
+    class particle_info {
+      public:
+        particle_info() : pdg_code{0}, weight{1.} { }
+        particle_info(int pdg, fourvector prod_pos, fourvector prod_mom, double weight = 1.) 
+          : pdg_code{pdg}, prod_pos{std::move(prod_pos)},  momentum{std::move(prod_mom)}, weight{weight} {
+          reset_decay_position();
+        };
+        particle_info(int pdg, fourvector prod_pos, fourvector dec_pos, fourvector prod_mom, double weight = 1.)
+          : pdg_code{pdg}, prod_pos{std::move(prod_pos)},
+          dec_pos{std::move(dec_pos)}, momentum{std::move(prod_mom)}, weight{weight}   { }
+
+        int pdg() const { return pdg_code; };
+        double get_weight() const { return weight; };
+
+        const fourvector& production_position() const { return prod_pos; };
+        const fourvector& production_momentum() const { return momentum; };
+        const fourvector& decay_position() const { return dec_pos; };
+        const fourvector& decay_momentum() const { return momentum; };
+
+      private:
+        int pdg_code;
+        fourvector prod_pos;
+        fourvector dec_pos;
+        fourvector momentum;
+        double weight;
+        void reset_decay_position();
+        friend class decaying_particle_info;
+    };
     class decaying_particle_info {
       public:
         using child_t = std::unique_ptr<decaying_particle_info>;
@@ -19,13 +47,19 @@ namespace dkgen {
         // non final states are the rest
         enum class state_type { non_final, pre_final_state, final_state };
 
-        decaying_particle_info();
+        decaying_particle_info() : part_info{}, parent{nullptr}, state{state_type::final_state} { }
+        // promote particle_info to decaying_particle_info as parent
+        decaying_particle_info(particle_info pi, state_type state = state_type::non_final)
+          : part_info{std::move(pi)}, parent{nullptr}, state{state} { }
         // Parent should be nullptr or ptr to parent 
-        decaying_particle_info(decaying_particle_info* parent, int pdg, fourvector prod_pos,
-            fourvector prod_mom, state_type state);
+        decaying_particle_info(decaying_particle_info* parent, int pdg, const fourvector& prod_pos,
+            const fourvector& prod_mom, state_type state)
+          : part_info{pdg, prod_pos, prod_mom}, parent{parent}, state{state} { }
+        /*
         // constructor for initial parent particle
         decaying_particle_info(int pdg, fourvector prod_pos,
             fourvector dec_pos, fourvector prod_mom, state_type state);
+        */
 
         // need custom destructor to efficiently delete children without stack overflows in recersive functions
         ~decaying_particle_info();
@@ -35,21 +69,21 @@ namespace dkgen {
         decaying_particle_info& operator=(decaying_particle_info&&) = default;
         decaying_particle_info& operator=(const decaying_particle_info&) = delete;
 
-        int pdg() const { return pdg_code; };
+        int pdg() const { return part_info.pdg_code; };
 
-        const fourvector& production_position() const { return prod_pos; };
-        const fourvector& production_momentum() const { return momentum; };
-        const fourvector& decay_position() const { return dec_pos; };
-        const fourvector& decay_momentum() const { return momentum; };
+        const fourvector& production_position() const { return part_info.prod_pos; };
+        const fourvector& production_momentum() const { return part_info.momentum; };
+        const fourvector& decay_position() const { return part_info.dec_pos; };
+        const fourvector& decay_momentum() const { return part_info.momentum; };
 
-        double decay_weight() const { return decay_wt; };
+        double decay_weight() const { return part_info.weight; };
 
         decaying_particle_info& set_decay_pos_from_tof(double tof, double speed_of_light);
         decaying_particle_info& set_production_position(const fourvector& pos);
         decaying_particle_info& set_production_position(fourvector&& pos);
 
-        decaying_particle_info& set_decay_weight(double wt) { decay_wt = wt; return *this; };
-        decaying_particle_info& multiply_decay_weight(double wt) { decay_wt *= wt; return *this; };
+        decaying_particle_info& set_decay_weight(double wt) { part_info.weight = wt; return *this; };
+        decaying_particle_info& multiply_decay_weight(double wt) { part_info.weight *= wt; return *this; };
 
         decaying_particle_info* get_parent() const { return parent; }
         const child_vector_t& get_children() const { return children; }
@@ -62,20 +96,16 @@ namespace dkgen {
         decaying_particle_info& set_pre_final_state() { state = state_type::pre_final_state; return *this; }
         decaying_particle_info& unset_pre_final_state() { state = state_type::non_final; return *this; }
 
-        bool is_decay_position_set() const { return !(dec_pos.t() < prod_pos.t()); }
+        bool is_decay_position_set() const { return !(part_info.dec_pos.t() < part_info.prod_pos.t()); }
 
         size_t get_number_of_particles_in_hierarchy() const;
+        
       private:
-        int pdg_code;
+        particle_info part_info;
         decaying_particle_info_ptr parent; // not owned by this object. deleting "this" has no effect on parent
         child_vector_t children; // owned by this object. deleting "this" deletes all children
-        fourvector prod_pos;
-        fourvector dec_pos;
-        fourvector momentum;
-        double decay_wt;
         state_type state;
-
-        void reset_decay_position();
+        
     };
   }
 }

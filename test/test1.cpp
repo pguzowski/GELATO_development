@@ -86,7 +86,6 @@ int main(int argc, char** argv) {
         {0.,0.,0.,0.},
         {0.,0.,0.,0.},
         {0.,0.,mom,std::sqrt(100.*100.+mom*mom)},
-        dkgen::core::decaying_particle_info::state_type::non_final
         },
         [&rng, &gen]()->double{return rng(gen);});
 

@@ -65,7 +65,6 @@ int main(int argc, char** argv) {
           {0.,0.,0.,0.}, // production position
           {0.,0.,0.,0.}, // decay position
           {0.,0.,kmom,std::sqrt(kmom*kmom + kmass*kmass)}, // momentum
-          dkgen::core::decaying_particle_info::state_type::non_final // state
         },
         [&rng, &gen]()->double{return rng(gen);});
 

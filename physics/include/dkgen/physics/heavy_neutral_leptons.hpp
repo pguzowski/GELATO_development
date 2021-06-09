@@ -6,7 +6,8 @@
 
 #include <cmath>
 
-#include <gsl/gsl_integration.h>
+#include "dkgen/physics/detail/integration.hpp"
+#include "dkgen/physics/detail/hnl.hpp"
 
 #define DEBUG
 #ifdef DEBUG
@@ -17,22 +18,28 @@ namespace dkgen {
   namespace physics {
     namespace heavy_neutral_leptons {
 
-      // allows passing lambda into gsl_integrate
-      template<typename F>  class gsl_function_wrapper : public gsl_function {
-        public:
-          gsl_function_wrapper(const F& func) : _func(func) {
-            function = &gsl_function_wrapper::invoke;
-            params=this;
-          }
-        private:
-          const F& _func;
-          static double invoke(double x, void *params) {
-            return static_cast<gsl_function_wrapper*>(params)->_func(x);
-          }
-      };
-      
       enum class decay_modes { nu_nu_nu, e_e_nu, e_mu_nu, mu_e_nu, mu_mu_nu, e_pi, mu_pi, pi0_nu };
       enum class production_modes { k_mu2, k_mu3, k_e2, k_e3, k0_mu, k0_e, pi_mu, pi_e, mu_e };
+      const std::vector<decay_modes> all_decay_modes{
+        decay_modes::e_e_nu,
+        decay_modes::e_mu_nu,
+        decay_modes::mu_e_nu,
+        decay_modes::mu_mu_nu,
+        decay_modes::e_pi,
+        decay_modes::mu_pi,
+        decay_modes::pi0_nu
+      };
+      const std::vector<production_modes> all_production_modes{
+        production_modes::k_mu2,
+        production_modes::k_mu3,
+        production_modes::k_e2,
+        production_modes::k_e3,
+        production_modes::k0_mu,
+        production_modes::k0_e,
+        production_modes::pi_mu,
+        production_modes::pi_e,
+        production_modes::mu_e
+      };
       
       struct model_parameters {
         double HNL_mass;
@@ -44,25 +51,8 @@ namespace dkgen {
           const model_parameters& params,
           const dkgen::core::config& conf,
           // all "visible" final states
-          std::vector<decay_modes> decay_modes_to_use = { 
-            decay_modes::e_e_nu,
-            decay_modes::e_mu_nu,
-            decay_modes::mu_mu_nu,
-            decay_modes::e_pi,
-            decay_modes::mu_pi,
-            decay_modes::pi0_nu,  
-          },
-          std::vector<production_modes> production_modes_to_use = {
-            production_modes::k_mu2,
-            production_modes::k_mu3,
-            production_modes::k_e2,
-            production_modes::k_e3,
-            production_modes::k0_mu,
-            production_modes::k0_e,
-            production_modes::pi_mu,
-            production_modes::pi_e,
-            production_modes::mu_e,
-          },
+          const std::vector<decay_modes>& decay_modes_to_use = all_decay_modes,
+          const std::vector<production_modes>& production_modes_to_use = all_production_modes,
           dkgen::core::driver::particle_map input = {}) {
 
         if(decay_modes_to_use.empty() || production_modes_to_use.empty()) {
@@ -159,28 +149,9 @@ namespace dkgen {
         };
         auto sqrtkl = sqrt_kallen_lambda; // alias with shorter name
         
-        auto integrate = [](auto fn, double low, double high) -> double { 
-          double result, error;
-          size_t neval;
-          gsl_function_wrapper<decltype(fn)> wrapped_fn(fn);
-          gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);   
-          gsl_integration_qng(func, low, high, 1e-5, 1e-5, &result, &error, &neval);
-          return result;
-        };
-        /*
-        auto integrate2 = [](auto fn, double low, double high,
-            gsl_integration_workspace * const ws, size_t limit) -> double { 
-          double result, error;
-          //size_t neval;
-          gsl_function_wrapper<decltype(fn)> wrapped_fn(fn);
-          gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);   
-          gsl_integration_qags(func, low, high, 1e-2, 1e-2, limit,  ws, &result, &error);
-          return result;
-        };
-        */
-        
-        auto I_h1 = [sqrtkl,integrate](double x, double y, double z, double f0, double lam_plus, double lam_0, int plus_minus) {
-          auto s_integrand = [sqrtkl,plus_minus,f0,lam_plus,lam_0,x,y,z,integrate](double s) {
+        namespace detint = detail::integration;
+        auto I_h1 = [sqrtkl](double x, double y, double z, double f0, double lam_plus, double lam_0, int plus_minus) {
+          auto s_integrand = [sqrtkl,plus_minus,f0,lam_plus,lam_0,x,y,z](double s) {
             auto t_integrand = [sqrtkl,plus_minus,s,f0,lam_plus,lam_0,x,y,z](double t) {
               const double u = 1. + x + y + z - s - t;
               if(std::sqrt(u) < std::sqrt(y) + std::sqrt(z)) {
@@ -209,9 +180,9 @@ namespace dkgen {
               std::cout << "s "<<s<<" midpt "<<midpt<<" delta "<<delta<< " sqrtkl(s,y,z) "<<sqrtkl(s,y,z)<<" sqrtkl(1,s,z) "<<sqrtkl(1,s,z)<<std::endl;
                 throw std::runtime_error("nan in integration limits");
             }
-            return integrate(t_integrand, midpt - delta, midpt + delta);
+            return detint::integrate(t_integrand, midpt - delta, midpt + delta);
           };
-          return integrate(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
+          return detint::integrate(s_integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
         };
 
         auto P_decay_rate_to_leptons = [&dparams,sqrtkl,HNL_mass](flavour fl, double sm_nu_br, double pseudoscalar_mass, double lep_mass, int plus_minus) {
@@ -496,7 +467,7 @@ namespace dkgen {
         //////////////// MUON DECAYS ///////////////////////////////////////////////////////////////////////////////
 
 
-        auto I_l = [sqrtkl,integrate] (double x, double y, double z, int plus_minus, bool is_anti) -> double  {
+        auto I_l = [sqrtkl] (double x, double y, double z, int plus_minus, bool is_anti) -> double  {
           std::function<double(double)> integrand;
           if(is_anti) {
             integrand = [sqrtkl,x,y,z,plus_minus](double s) -> double {
@@ -509,7 +480,7 @@ namespace dkgen {
               return (1.+z-s)*(s-x-y-plus_minus*sqrt_kl_sxy)*sqrt_kl_sxy*sqrtkl(1,s,z)/s;
             };
           }
-          return 12. * integrate(integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
+          return 12. * detint::integrate(integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
         };
         
         // for mu+ -> e+ + ... (so for antiparticles)
@@ -608,7 +579,7 @@ namespace dkgen {
           const double sqrt_kl = sqrtkl(1.,x,y);
           return sqrt_kl / 4./M_PI * (std::pow(1.-x,2) - y*(1.+x) + plus_minus * (x-1.) * sqrt_kl * cos_theta);
         };
-        auto I1_3 = [sqrtkl,integrate](double x, double y, double z) {
+        auto I1_3 = [sqrtkl](double x, double y, double z) {
           if(x<0.) x = 0.;
           if(y<0.) y = 0.;
           if(z<0.) z = 0.;
@@ -624,9 +595,9 @@ namespace dkgen {
             return (s-x-y)*(1+z-s)*sqrtkl(s,x,y)*sqrtkl(1,s,z)/s;
           };
           
-          return 12. * integrate(integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1-std::sqrt(z),2));
+          return 12. * detint::integrate(integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1-std::sqrt(z),2));
         };
-        auto I2_3 = [sqrtkl,integrate](double x, double y, double z) {
+        auto I2_3 = [sqrtkl](double x, double y, double z) {
           if(x<0.) x = 0.;
           if(y<0.) y = 0.;
           if(z<0.) z = 0.;
@@ -644,7 +615,8 @@ namespace dkgen {
           auto integrand = [sqrtkl,x,y,z](double s) {
             return (1+x-s)*sqrtkl(s,y,z)*sqrtkl(1,s,x)/s;
           };
-          return 24. * std::sqrt(y*z) * integrate(integrand, std::pow(std::sqrt(y)+std::sqrt(z),2), std::pow(1-std::sqrt(x),2));
+          return 24. * std::sqrt(y*z)
+            * detint::integrate(integrand, std::pow(std::sqrt(y)+std::sqrt(z),2), std::pow(1-std::sqrt(x),2));
         };
 
         

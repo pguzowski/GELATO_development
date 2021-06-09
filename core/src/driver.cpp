@@ -22,14 +22,14 @@ dkgen::core::driver::~driver() {
 */
 
 dkgen::core::particle_history dkgen::core::driver::generate_decays(
-    dkgen::core::decaying_particle_info&& parent_meson,
+    const dkgen::core::particle_info& parent_meson,
     dkgen::core::random_uniform_0_1_generator rng
     ) const {
 
   particle_history ret;
 
   // will keep ownership of all children
-  std::unique_ptr<decaying_particle_info> top_parent = std::make_unique<decaying_particle_info>(std::move(parent_meson));
+  std::unique_ptr<decaying_particle_info> top_parent = std::make_unique<decaying_particle_info>(parent_meson);
 
   // implement queue as std::vector that grows
   // (not too worried about memory size, but worried about timing)
