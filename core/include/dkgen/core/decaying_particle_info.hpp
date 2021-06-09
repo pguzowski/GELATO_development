@@ -47,12 +47,14 @@ namespace dkgen {
         // non final states are the rest
         enum class state_type { non_final, pre_final_state, final_state };
 
-        decaying_particle_info() : part_info{}, parent{nullptr}, state{state_type::final_state} { }
+        // no default constructor
+        decaying_particle_info() = delete;
+        //decaying_particle_info() : part_info{}, parent{nullptr}, state{state_type::final_state} { }
         // promote particle_info to decaying_particle_info as parent
         decaying_particle_info(particle_info pi, state_type state = state_type::non_final)
           : part_info{std::move(pi)}, parent{nullptr}, state{state} { }
         // Parent should be nullptr or ptr to parent 
-        decaying_particle_info(decaying_particle_info* parent, int pdg, const fourvector& prod_pos,
+        decaying_particle_info(decaying_particle_info_ptr parent, int pdg, const fourvector& prod_pos,
             const fourvector& prod_mom, state_type state)
           : part_info{pdg, prod_pos, prod_mom}, parent{parent}, state{state} { }
         /*

@@ -220,7 +220,9 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
 
   const particle_definition& parent_particle_info = find_particle(parent->pdg());
   if(parent_particle_info.lifetime() < 0.) return; // stable particle
-  auto const& dm = parent_particle_info.generate_decay_mode(rng);
+  double weight;
+  auto const& dm = parent_particle_info.generate_weighted_decay_mode(rng, weight);
+  parent->multiply_decay_weight(weight);
   if(dm.is_null()) return;
 
   if(config.force_decays_inside_detector() && dm.is_pure_final_state()) {

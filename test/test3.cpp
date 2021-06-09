@@ -12,11 +12,17 @@
 
 int main(int argc, char** argv) {
   size_t n_to_gen = 10;
+  long long max_n_to_output = -1;
   double mass = 0.140, Ue4 = 0, Um4 = 0, Ut4 = 0;
   bool force = false, majorana = false, debug = false;
   for(int i = 0; i < argc /* as -n option will have argument */; ++i) {
-    if(i+1 < argc && std::string(argv[i]) == "-n") { // number to gen
+    if(i+1 < argc && std::string(argv[i]) == "-n") { // number initial particles to gen
       n_to_gen = std::atoll(argv[i+1]);
+      i++;
+      continue;
+    }
+    if(i+1 < argc && std::string(argv[i]) == "-N") { // max number of ouput events
+      max_n_to_output = std::atoll(argv[i+1]);
       i++;
       continue;
     }
@@ -69,13 +75,20 @@ int main(int argc, char** argv) {
 
   //const double scalar_mass = mass; // GeV
   //const double scalar_theta = theta;
-  const std::string metadata = "";
-  //const std::string metadata{(std::ostringstream() << "model_theta=" << scalar_theta).str()};
+  //const std::string metadata = "";
+  const std::string metadata{
+    (std::ostringstream()
+     << (majorana ? "type=Majorana" : "type=Dirac")
+     <<" U_e4=" << Ue4
+     <<" U_m4=" << Um4
+     <<" U_t4=" << Ut4
+     ).str()
+  };
   //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
   const dkgen::physics::heavy_neutral_leptons::model_parameters params{mass, Ue4, Um4, Ut4, majorana};
-  auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf,
+  auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf/*,
       dkgen::physics::heavy_neutral_leptons::all_decay_modes,
-      {dkgen::physics::heavy_neutral_leptons::production_modes::mu_e});
+      {dkgen::physics::heavy_neutral_leptons::production_modes::mu_e}*/);
   
   if(debug) {
     for(auto p : particles) {
@@ -102,6 +115,7 @@ int main(int argc, char** argv) {
   std::default_random_engine gen;
   //std::vector<double> moms(n_to_gen);
   size_t i = 0;
+  long long n_output = 0;
   while(i++ < n_to_gen) {
     auto const& res = driver.generate_decays(
         {
@@ -111,7 +125,7 @@ int main(int argc, char** argv) {
           {0.,0.,kmom,std::sqrt(kmom*kmom + kmass*kmass)}, // momentum
         },
         [&rng, &gen]()->double{return rng(gen);});
-    if(res) {
+    if(res && (max_n_to_output > 0 && n_output++ < max_n_to_output)) {
       std::cout << res.build_hepevt_output().build_text(metadata.c_str()) << std::endl;
     }
   }
