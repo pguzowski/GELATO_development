@@ -85,8 +85,9 @@ int main(int argc, char** argv) {
      <<" U_t4=" << Ut4
      ).str()
   };
-  if(max_n_to_output < 1) max_n_to_output = 10;
   namespace hnl = dkgen::physics::heavy_neutral_leptons;
+  if(false) {
+  if(max_n_to_output < 1) max_n_to_output = 10;
   //namespace hnl = dkgen::physics::arXiv_1905_00284;
   for(int mm = 1; mm <= max_n_to_output; ++mm) {
     const double delta = 1./max_n_to_output;
@@ -111,8 +112,9 @@ int main(int argc, char** argv) {
       }
     }
   }
+  }
 
-  if (false) {
+  if (true) {
 
     //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
     const hnl::model_parameters params{mass, Ue4, Um4, Ut4, majorana};
@@ -127,7 +129,7 @@ int main(int argc, char** argv) {
              for(auto d : p.get_decay_table()) {
                std::cout << "  decay BR="<<d.branching_ratio;
                for(auto m : d.daughters) {
-                 std::cout <<" " << m.first;
+                 std::cout <<" " << m.first << (m.second ? " F":" D");
                }
                std::cout <<std::endl;
              }
@@ -158,6 +160,7 @@ int main(int argc, char** argv) {
           [&rng, &gen]()->double{return rng(gen);});
       if(res && (max_n_to_output  < 1 || n_output++ < max_n_to_output)) {
         std::cout << res.build_hepevt_output().build_text(metadata.c_str()) << std::endl;
+        if(n_output >= max_n_to_output) break;
       }
     }
   }

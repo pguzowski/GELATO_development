@@ -34,12 +34,15 @@ namespace dkgen {
 
         using integrate_alt_workspace = gsl_integration_workspace;
         template<typename F>
-        double integrate_alt(F fn, double low, double high,
-            integrate_alt_workspace* ws, size_t limit, double tolerance = 1e-5){ 
+        double integrate_alt(F fn, double low, double high,/*
+            integrate_alt_workspace* ws, size_t limit,*/ double tolerance = 1e-5){ 
           double result, error;
           gsl_function_wrapper<decltype(fn)> wrapped_fn(fn);
-          gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);   
+          gsl_function *func = static_cast<gsl_function*>(&wrapped_fn);
+          size_t limit = 10000;
+          auto ws = gsl_integration_workspace_alloc(limit);
           gsl_integration_qags(func, low, high, tolerance, tolerance, limit,  ws, &result, &error);
+          gsl_integration_workspace_free(ws);
           return result;
         };
       }

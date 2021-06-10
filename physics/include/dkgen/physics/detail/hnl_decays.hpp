@@ -10,6 +10,11 @@
 #include <cmath>
 #include <numeric>
 
+#undef DEBUG
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 namespace dkgen {
   namespace physics {
     namespace detail {
@@ -248,7 +253,7 @@ namespace dkgen {
           hnl_decay_width_map_t decay_rates;
           decay_rates[decay_modes::nu_nu_nu] = (is_majorana ? 1. : 0.5) * decay_rate_to_3nu(dparams);
 #ifdef DEBUG
-          std::cout << "Add hnl->nu_nu_nu r="<<total_decay_rate<<std::endl;
+          std::cout << "Add hnl->nu_nu_nu r="<<decay_rates[decay_modes::nu_nu_nu]<<std::endl;
 #endif
 
           if(HNL_mass > 2*elec_mass) {
@@ -501,5 +506,6 @@ namespace dkgen {
     }
   }
 }
+#undef DEBUG
 
 #endif // __dkgen_physics_detail_hnl_hpp__

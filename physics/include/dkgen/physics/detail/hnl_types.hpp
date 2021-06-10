@@ -16,7 +16,7 @@ namespace dkgen {
           
         constexpr bool self_conjugate = true;
         constexpr bool final_state = true;
-        constexpr bool NOT_final_state = true;
+        constexpr bool NOT_final_state = !final_state;
 
         constexpr int helicity_plus  = +1;
         constexpr int helicity_minus = -1;
