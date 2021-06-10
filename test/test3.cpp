@@ -50,11 +50,11 @@ int main(int argc, char** argv) {
       force = true;
       continue;
     }
-    if(std::string(argv[i]) == "-e") { // 'e' for Ettora Majorana (m/M already taken)
+    if(std::string(argv[i]) == "-j") { // 'j' for Majorana (m/M already taken)
       majorana = true;
       continue;
     }
-    if(std::string(argv[i]) == "-d") { // 'e' for Ettora Majorana (m/M already taken)
+    if(std::string(argv[i]) == "-d") { 
       debug = true;
       continue;
     }

@@ -106,7 +106,7 @@ namespace dkgen {
         const double hbar = conf.physical_params().hbar;
         const double gfermi2 = std::pow(conf.physical_params().gFermi,2);
 
-        const double f2_pion = conf.physical_params().pion_decay_constant;
+        const double f2_pion = std::pow(conf.physical_params().pion_decay_constant,2);
         const double CKM_Vud2 = std::pow(conf.physical_params().CKM_Vud,2);
         const double CKM_Vus2 = std::pow(conf.physical_params().CKM_Vus,2);
         
@@ -673,7 +673,7 @@ namespace dkgen {
 
         auto decay_rate_to_nu_pseudoscalar = [&dparams, gfermi2, HNL_mass](double pseudoscalar_mass, double f2) {
           const double xi_p = std::pow(pseudoscalar_mass / HNL_mass, 2);
-          return dparams.sum_U2 * gfermi2 * f2 * dparams.m3 * std::pow(1-xi_p,2) / 16./ M_PI;
+          return dparams.sum_U2 * gfermi2 * f2 * dparams.m3 * std::pow(1-xi_p,2) / 64./ M_PI;
         };
         
         auto decay_rate_to_lepton_pseudoscalar =
