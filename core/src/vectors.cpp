@@ -183,6 +183,12 @@ double dkgen::core::vector3::z() const {
 #endif
 }
 
+dkgen::core::vector3 dkgen::core::vector3::operator-() const {
+  vector3 ret(*this);
+  *ret.impl = -*ret.impl;
+  return ret;
+}
+
 dkgen::core::vector3 dkgen::core::vector3::operator-(const vector3& v2) const {
   vector3 ret(*this);
   *ret.impl -= *v2.impl;

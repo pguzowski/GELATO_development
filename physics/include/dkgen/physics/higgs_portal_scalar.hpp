@@ -30,7 +30,6 @@ namespace dkgen {
         const int elec_pdg    = elec.pdgcode;
         const int muon_pdg    = muon.pdgcode;
 
-        // GeV system of units
         const double pion_pm_mass = pion_pm.mass;
         const double pion_0_mass  = pion_0.mass;
         const double kaon_pm_mass = kaon_pm.mass;
@@ -48,14 +47,18 @@ namespace dkgen {
         const double hbar = conf.physical_params().hbar;
         const double higgs_vev = conf.physical_params().higgs_vev;
 
-        auto decay_rate_to_leptons = [&scalar_mass, &theta, &higgs_vev](double daughter_mass) -> double {
+
+        // equation (3) of arXiv:1909.11670v1
+        auto decay_rate_to_leptons = [scalar_mass, theta, higgs_vev](double daughter_mass) -> double {
           return 
             theta*theta * daughter_mass*daughter_mass*scalar_mass
             / (8.*M_PI*higgs_vev*higgs_vev)
             * std::pow(1.-4.*daughter_mass*daughter_mass/scalar_mass/scalar_mass,1.5);
         };
+
+        // equation (4) of arXiv:1909.11670v1
         // don't forget about the x2 multiplicity factor for charged pions (later on)
-        auto decay_rate_to_pions = [&scalar_mass, &theta, &higgs_vev](double daughter_mass) -> double {
+        auto decay_rate_to_pions = [scalar_mass, theta, higgs_vev](double daughter_mass) -> double {
           const double g = 2.*scalar_mass*scalar_mass/9. + 11.*daughter_mass*daughter_mass/9.;
           return
             theta*theta * 3.*g*g
@@ -74,7 +77,8 @@ namespace dkgen {
           total_decay_rate += decay_rate_to_pions(pion_0_mass);
         }
         if(scalar_mass > 2*pion_pm_mass) {
-          total_decay_rate += 2.*decay_rate_to_pions(pion_pm_mass); // x2 for non-identical final states
+          // x2 for non-identical final states
+          total_decay_rate += 2.*decay_rate_to_pions(pion_pm_mass); 
         }
         const double scalar_lifetime = hbar / total_decay_rate;
 
@@ -131,6 +135,8 @@ namespace dkgen {
         return ret;
       }
 
+      // initial kaon branching ration to Scalars. Needed to reweight events for a given
+      // model parameter
       double kaon_branching_ratio(double scalar_mass, double theta, int kaon_pdg,
           const dkgen::core::config& conf) {
 

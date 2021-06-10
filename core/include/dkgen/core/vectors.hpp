@@ -56,6 +56,7 @@ namespace dkgen {
         double z() const;
         vector3& set_xyz(double x, double y, double z);
 
+        vector3 operator-() const; // unary negation
         vector3 operator-(const vector3& v) const;
         vector3 operator+(const vector3& v) const;
 

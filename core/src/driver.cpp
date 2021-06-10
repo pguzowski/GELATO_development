@@ -276,10 +276,13 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
     switch(dm.reweighting_type) {
       case decay_mode::reweighter_type::twobody:
         {
+          // use parent, unless parent is at rest
+          // else use -ve parent of parent (pparent), unless pparent is also at rest
+          // else use z-axis
           const vector3 reference = ((parent->decay_momentum().vect().mag() > 0)
               ? parent->decay_momentum().vect().unit()
               : ((parent->get_parent() != nullptr && parent->get_parent()->decay_momentum().vect().mag() > 0)
-                ? parent->get_parent()->decay_momentum().vect().unit()
+                ? -(parent->get_parent()->decay_momentum().vect().unit())
                 : vector3{0.,0.,1.} // last resort, use z-axis
                 )
               );
@@ -398,10 +401,13 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
         {
           const double red_invmass2_12 = (p1+p2).m2() / parent->decay_momentum().m2();
           const double red_invmass2_13 = (p1+p3).m2() / parent->decay_momentum().m2();
+          // use parent, unless parent is at rest
+          // else use -ve parent of parent (pparent), unless pparent is also at rest
+          // else use z-axis
           const vector3 reference = ((parent->decay_momentum().vect().mag() > 0)
               ? parent->decay_momentum().vect().unit()
               : ((parent->get_parent() != nullptr && parent->get_parent()->decay_momentum().vect().mag() > 0)
-                ? parent->get_parent()->decay_momentum().vect().unit()
+                ? -(parent->get_parent()->decay_momentum().vect().unit())
                 : vector3{0.,0.,1.} // last resort, use z-axis
                 )
               );

@@ -4,6 +4,7 @@
 #include <gsl/gsl_integration.h>
 
 #include "dkgen/physics/heavy_neutral_leptons.hpp"
+//#include "../../development_misc/arXiv_1905_00284.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -85,14 +86,16 @@ int main(int argc, char** argv) {
      ).str()
   };
   if(max_n_to_output < 1) max_n_to_output = 10;
+  namespace hnl = dkgen::physics::heavy_neutral_leptons;
+  //namespace hnl = dkgen::physics::arXiv_1905_00284;
   for(int mm = 1; mm <= max_n_to_output; ++mm) {
     const double delta = 1./max_n_to_output;
     double mass = delta * mm * conf.physical_params().find_particle("kaon_pm").mass;
     //std::cout << mass << std::endl;
-    const dkgen::physics::heavy_neutral_leptons::model_parameters params{mass, Ue4, Um4, Ut4, false};
-    auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf,
-        dkgen::physics::heavy_neutral_leptons::all_decay_modes,
-        {dkgen::physics::heavy_neutral_leptons::production_modes::k_e2}, false
+    const hnl::model_parameters params{mass, Ue4, Um4, Ut4, false};
+    auto const& particles = hnl::create_particle_content(params,conf,
+        hnl::all_decay_modes,
+        {hnl::production_modes::k_e2}, false
         );
     for(auto& p : particles) {
       if(p.pdg() == 91) {
@@ -112,10 +115,11 @@ int main(int argc, char** argv) {
   if (false) {
 
     //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
-    const dkgen::physics::heavy_neutral_leptons::model_parameters params{mass, Ue4, Um4, Ut4, majorana};
-    auto const& particles = dkgen::physics::heavy_neutral_leptons::create_particle_content(params,conf/*,
-                                                                                                        dkgen::physics::heavy_neutral_leptons::all_decay_modes,
-                                                                                                        {dkgen::physics::heavy_neutral_leptons::production_modes::mu_e}*/);
+    const hnl::model_parameters params{mass, Ue4, Um4, Ut4, majorana};
+    auto const& particles = hnl::create_particle_content(params,conf /*,
+        hnl::all_decay_modes,
+        {hnl::production_modes::mu_e}*/
+        );
 
          if(debug) {
            for(auto p : particles) {

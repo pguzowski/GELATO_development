@@ -12,13 +12,13 @@ namespace dkgen {
     // for fermions, can have angular distribution
     class twobody_dalitz_function {
       public:
-        using cos_theta = double; // angle w.r.t. parent momentum (or parent's parent momentum if decaying at rest)
-        using functype = std::function<double(cos_theta cth)>;
+        using cos_theta_1 = double; // angle of first child w.r.t. parent momentum
+        using functype = std::function<double(cos_theta_1 cth)>;
 
         twobody_dalitz_function() /*: enabled(false)*/ {}
         twobody_dalitz_function(functype fn) : /*enabled(true),*/  func(fn) {}
         
-        double operator()(cos_theta cth) const {
+        double operator()(cos_theta_1 cth) const {
           //if(!enabled) return 1.;
           return func(cth);
         }
