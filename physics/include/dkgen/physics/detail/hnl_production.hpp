@@ -436,7 +436,7 @@ namespace dkgen {
 
 
           if(kaon_0L_mass > HNL_mass + muon_mass + pion_pm_mass && dparams.U2(flavour::m) > 0.
-              && production_mode_enabled(production_modes::k_mu3,production_modes_to_use)) {
+              && production_mode_enabled(production_modes::k0_mu,production_modes_to_use)) {
 #ifdef DEBUG
          std::cerr << "adding: "<< K0_decay_rates_poshel[production_modes::k0_mu]<<"/"<<total_k0_decay_rate<<std::endl;
 #endif
@@ -462,7 +462,7 @@ namespace dkgen {
                 });
           }
           if(kaon_0L_mass > HNL_mass + elec_mass + pion_pm_mass && dparams.U2(flavour::e) > 0.
-              && production_mode_enabled(production_modes::k_e3,production_modes_to_use)) {
+              && production_mode_enabled(production_modes::k0_e,production_modes_to_use)) {
             neutral_kaon.add_decay({
                 .5 * K0_decay_rates_poshel[production_modes::k0_e]/total_k0_decay_rate,
                 {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state},{-pion_pm_pdg,final_state}}

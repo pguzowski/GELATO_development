@@ -41,6 +41,14 @@ namespace dkgen {
         production_modes::pi_e,
         production_modes::mu_e
       };
+      const std::vector<production_modes> all_kaon_pm_production_modes{
+        production_modes::k_mu2, production_modes::k_mu3, production_modes::k_e2, production_modes::k_e3, };
+      const std::vector<production_modes> all_pion_production_modes{
+        production_modes::pi_mu, production_modes::pi_e, };
+      const std::vector<production_modes> all_kaon_0L_production_modes{
+        production_modes::k0_mu, production_modes::k0_e, };
+      const std::vector<production_modes> all_muon_production_modes{
+        production_modes::mu_e };
       
       struct model_parameters {
         double HNL_mass;
