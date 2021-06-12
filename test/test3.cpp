@@ -113,19 +113,20 @@ int main(int argc, char** argv) {
   conf.set_force_decays_in_detector(force);
   driver.set_config(conf);
   
-  const auto rot = [](){
-    dkgen::core::rotation R;
+  /*
+   *                NUMI !!!!!!!
+   *
+  dkgen::core::geometry geo({31387.58422, 3316.402543, 60100.2414},{1.25e2,1.25e2,5e2},
+    dkgen::core::rotation{}.rotate_axes({  0.92103853804025681562,    0.022713504803924120662,  0.38880857519374290021  }, 
+                                        {  4.6254001262154668408e-05, 0.99829162468141474651,  -0.058427989452906302359 }, 
+                                        { -0.38947144863934973769,    0.053832413938664107345,  0.91946400794392302291  }));
+  driver.set_geometry(geo);
+  */
 
-    // Rotation matrix using the 0,0,0 position for MicroBooNE (beam to det input) // From NuMI flux note
-    // Also inverts so now to det to beam
-    R.rotate_axes({  0.92103853804025681562,    0.022713504803924120662,  0.38880857519374290021  }, 
-                  {  4.6254001262154668408e-05, 0.99829162468141474651,  -0.058427989452906302359 }, 
-                  { -0.38947144863934973769,    0.053832413938664107345,  0.91946400794392302291  }); 
-    //R.invert(); // go back to beam to det
-    return R;
-  }();
-
-  dkgen::core::geometry geo({31387.58422, 3316.402543, 60100.2414},{1.25e2,1.25e2,5e2}, rot);
+  /*
+   *                BNB
+   */
+  dkgen::core::geometry geo({0., 0., 475e2}, {1.25e2, 1.25e2, 5e2});
   driver.set_geometry(geo);
   
   //const double scalar_mass = mass; // GeV
