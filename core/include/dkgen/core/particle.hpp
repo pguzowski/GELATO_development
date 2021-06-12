@@ -143,6 +143,8 @@ namespace dkgen {
 
     class particle_definition {
       public:
+        //using running_sum_branching_ratio = double;
+        //using decay_table_t = std::pair<decay_mode,running_sum_branching_ratio>;
         using decay_table_t = std::vector<decay_mode>;
         particle_definition() = default;
         // negative lifetime for stable or final state particles

@@ -9,6 +9,7 @@
 #include "dkgen/core/particle.hpp"
 
 
+//#define DEBUG
 #ifdef DEBUG
 #include <iostream>
 #endif
@@ -222,6 +223,14 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
   if(parent_particle_info.lifetime() < 0.) return; // stable particle
   double weight;
   auto const& dm = parent_particle_info.generate_weighted_decay_mode(rng, weight);
+#ifdef DEBUG
+  if(std::abs(parent->pdg())==89 || std::abs(parent->pdg())==91) {
+    std::cout << "for decay_mode size: "<<dm.daughters.size()<<" pdgs:";
+    for(auto& dmdm: dm.daughters) std::cout << " "<<dmdm.first;
+    std::cout<<std::endl;
+  }
+#endif
+  
   parent->multiply_decay_weight(weight);
   if(dm.is_null()) return;
 
@@ -445,5 +454,13 @@ dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std:
   else {
     throw std::runtime_error("4+ body decays are not implemented");
   }
+
+#ifdef DEBUG
+if(std::abs(parent->pdg())==89 || std::abs(parent->pdg())==91) {
+  std::cout << "put on parent size: "<<parent->get_children().size()<<" pdgs:";
+  for(auto& dmdm: parent->get_children()) std::cout << " "<<dmdm->pdg();
+  std::cout<<std::endl;
+}
+#endif
 
 }

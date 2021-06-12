@@ -50,6 +50,8 @@ dkgen::core::particle_definition& dkgen::core::particle_definition::finalise_dec
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("particle_definition::finalise_decay_table(): Decay table has been finalised already!");
   }
+  // sorting by largest branching ratio speeds up code later on when randomly choosing modes
+  std::sort(decay_table.begin(), decay_table.end(), [](auto& a, auto& b){ return a.branching_ratio > b.branching_ratio; });
   double rolling_sum_branching_ratios = 0.;
   for(auto const& dm : decay_table) {
     // also check that only 2 and 3 body decays are present

@@ -7,6 +7,7 @@ target_compile_features(test2 PUBLIC cxx_std_14)
 target_link_libraries(test2 PRIVATE dkgen dkgen-physics)
 
 find_package(GSL)
+find_package(ROOT)
 add_executable(test3 test3.cpp)
 target_compile_features(test3 PUBLIC cxx_std_14)
-target_link_libraries(test3 PRIVATE dkgen dkgen-physics GSL::gsl)
+target_link_libraries(test3 PRIVATE dkgen dkgen-physics GSL::gsl ROOT::Tree ROOT::Physics)
