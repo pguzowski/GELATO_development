@@ -259,12 +259,17 @@ int main(int argc, char** argv) {
     }
     else {
       std::ifstream fluxf{fluxfn};
+      if(!fluxf.is_open()) {
+        // probably file doesn't exist;
+        std::cerr << "File "<<fluxfn<<" couldn't be opened."<<std::endl;
+        return -1;
+      }
       int nread = 0;
-      while(!fluxf.eof()) {
+      while(!fluxf.eof() && fluxf.good()) {
         int pdg;
         double wt, vx,vy,vz,vt, px,py,pz,e;
         fluxf>>pdg;
-        if(fluxf.eof()) break;
+        if(fluxf.eof() || !fluxf.good()) break;
         fluxf>>wt>>vx>>vy>>vz>>vt>>px>>py>>pz>>e;
         nread++;
         if(std::abs(pdg) == 321) {
@@ -302,14 +307,22 @@ int main(int argc, char** argv) {
 
     TFile *f = new TFile(rootfn.c_str(),"recreate");
     TTree *t = new TTree("t","");
+    TLorentzVector *p0pos = new TLorentzVector;
+    TLorentzVector *p0mom = new TLorentzVector;
     TLorentzVector *p1 = new TLorentzVector;
     TLorentzVector *p2 = new TLorentzVector;
     TLorentzVector *p3 = new TLorentzVector;
+    TLorentzVector *phnl = new TLorentzVector;
+    TLorentzVector *decpos = new TLorentzVector;
     int dtype;
     double weight;
+    t->Branch("mesmom",&p0mom);
+    t->Branch("mespos",&p0pos);
     t->Branch("p1",&p1);
     t->Branch("p2",&p2);
     t->Branch("p3",&p3);
+    t->Branch("phnl",&phnl);
+    t->Branch("decpos",&decpos);
     t->Branch("type",&dtype);
     t->Branch("weight",&weight);
 
@@ -332,10 +345,16 @@ int main(int argc, char** argv) {
         int number_of_particle_in_list = 1;
         int number_of_HNL = 0;
         for(auto const& p : hepevt.particle_info) {
-          if(p.status == 2 && std::abs(p.pdg)>=89 && std::abs(p.pdg) <= 91) {
+          if(p.status == 0) {
+            p0pos->SetXYZT(p.position.x(),p.position.y(),p.position.z(),p.position.t());
+            p0mom->SetXYZT(p.momentum.x(),p.momentum.y(),p.momentum.z(),p.momentum.t());
+          }
+          else if(p.status == 2 && std::abs(p.pdg)>=89 && std::abs(p.pdg) <= 91) {
             number_of_HNL = number_of_particle_in_list;
+            phnl->SetXYZT(p.momentum.x(),p.momentum.y(),p.momentum.z(),p.momentum.t());
           }
           else if(p.status == 1 && p.first_mother == number_of_HNL) {
+            decpos->SetXYZT(p.position.x(),p.position.y(),p.position.z(),p.position.t());
             pdgs.push_back(std::abs(p.pdg));
             moms[imoms++]->SetXYZT(p.momentum.x(),p.momentum.y(),p.momentum.z(),p.momentum.t());
           }
