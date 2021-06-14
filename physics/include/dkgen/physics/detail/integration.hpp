@@ -44,7 +44,7 @@ namespace dkgen {
           gsl_integration_qags(func, low, high, tolerance, tolerance, limit,  ws, &result, &error);
           gsl_integration_workspace_free(ws);
           return result;
-        };
+        }
       }
     }
   }

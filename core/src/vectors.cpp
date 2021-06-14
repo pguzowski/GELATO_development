@@ -49,14 +49,22 @@ namespace dkgen {
   namespace core {
     struct vector3::_vector3_impl_ : public VECTOR3_CLASS {
       public:
-        using VECTOR3_CLASS::operator=;
+        //using VECTOR3_CLASS::operator=;
+        _vector3_impl_& operator=(const VECTOR3_CLASS& v) { 
+          VECTOR3_CLASS::operator=(v);
+          return *this;
+        }
     };
     struct fourvector::_fourvector_impl_ : public VECTOR4_CLASS {
       public:
     };
     struct rotation::_rotation_impl_ : public ROTATION_CLASS {
       public:
-        using ROTATION_CLASS::operator=;
+        //using ROTATION_CLASS::operator=;
+        _rotation_impl_& operator=(const ROTATION_CLASS& v) { 
+          ROTATION_CLASS::operator=(v);
+          return *this;
+        }
     };
   }
 }

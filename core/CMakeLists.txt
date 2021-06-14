@@ -52,7 +52,7 @@ if(NOT EXPOSE_PHYSICS_VECTORS)
       CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${INCDIRS}" 
       )
     string(REGEX MATCH
-      "(sizeof_<[0-9]+>|N\\s*=\\s*[0-9]+)"
+      "(sizeof_<[0-9]+>|[ \t\r\n]N[ \t\r\n]*=[ \t\r\n]*[0-9]+)"
       REGEX_ATTEMPT_RESULT ${RESULT_COMPILE_WORKED})
     string(REGEX MATCH
       "[0-9]+"

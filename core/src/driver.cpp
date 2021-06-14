@@ -4,6 +4,7 @@
 #include <memory>
 #include <cmath>
 #include <numeric>
+#include <algorithm>
 
 #include "dkgen/core/decaying_particle_info.hpp"
 #include "dkgen/core/particle.hpp"
@@ -200,7 +201,7 @@ const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int p
     throw std::runtime_error("Undefined particle requested! PDG code "+std::to_string(pdg));
   }
   return *p;
-};
+}
 
 
 dkgen::core::driver& dkgen::core::driver::set_config(const dkgen::core::config& conf) {

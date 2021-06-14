@@ -27,11 +27,11 @@ namespace dkgen {
 
         double I1_2(double x, double y) {
           return utils::sqrtkl(1.,x,y) * (std::pow(1.-x,2) - y*(1.+x));
-        };
+        }
         double I1_2_1(double x, double y, double cos_theta, int plus_minus) {
           const double sqrt_kl = utils::sqrtkl(1.,x,y);
           return sqrt_kl / 4./M_PI * (std::pow(1.-x,2) - y*(1.+x) + plus_minus * (x-1.) * sqrt_kl * cos_theta);
-        };
+        }
         double I1_3(double x, double y, double z) {
           if(x<0.) x = 0.;
           if(y<0.) y = 0.;
@@ -49,7 +49,7 @@ namespace dkgen {
           };
 
           return 12. * detail::integration::integrate(integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1-std::sqrt(z),2));
-        };
+        }
         double I2_3(double x, double y, double z) {
           if(x<0.) x = 0.;
           if(y<0.) y = 0.;
@@ -70,7 +70,7 @@ namespace dkgen {
           };
           return 24. * std::sqrt(y*z)
             * detail::integration::integrate(integrand, std::pow(std::sqrt(y)+std::sqrt(z),2), std::pow(1-std::sqrt(x),2));
-        };
+        }
 
 
         double decay_rate_to_3nu(const derived_params& dparams) {
@@ -81,15 +81,15 @@ namespace dkgen {
             double pseudoscalar_mass, double f2) {
           const double xi_p = std::pow(pseudoscalar_mass / dparams.raw_params.HNL_mass, 2);
           return dparams.sum_U2 * dparams.gFermi2 * f2 * dparams.m3 * std::pow(1-xi_p,2) / 64./ M_PI;
-        };
+        }
 
         double decay_rate_to_lepton_pseudoscalar(const derived_params& dparams,
             double lep_mass, double pseudoscalar_mass, double f2,
-              double CKM_V2, double U2) {
-            const double xi_l = std::pow(lep_mass / dparams.raw_params.HNL_mass,2);
-            const double xi_p = std::pow(pseudoscalar_mass / dparams.raw_params.HNL_mass,2);
-            return U2 * CKM_V2 * dparams.gFermi2 * f2 * dparams.m3 * I1_2(xi_l,xi_p) / 16./ M_PI;
-          };
+            double CKM_V2, double U2) {
+          const double xi_l = std::pow(lep_mass / dparams.raw_params.HNL_mass,2);
+          const double xi_p = std::pow(pseudoscalar_mass / dparams.raw_params.HNL_mass,2);
+          return U2 * CKM_V2 * dparams.gFermi2 * f2 * dparams.m3 * I1_2(xi_l,xi_p) / 16./ M_PI;
+        }
         auto make_diff_decay_rate_function_to_lepton_pseudoscalar(const derived_params& dparams,
             double lep_mass, double pseudoscalar_mass, int plus_minus /* helicity */) {
           const double HNL_mass = dparams.raw_params.HNL_mass;
@@ -99,7 +99,7 @@ namespace dkgen {
             return I1_2_1(xi_l, xi_p, cos_theta_l, plus_minus)/i1_2;
           };
           return diff_decay_rate;
-        };
+        }
 
         double decay_rate_to_nu_2lep(const derived_params& dparams, double lep_minus_mass,
             double lep_plus_mass, const c_struct& cs) {
@@ -112,7 +112,7 @@ namespace dkgen {
           }
           return dparams.gFermi2 * dparams.m5 * dparams.pi3_inv / 192.
             * (cs.c1 * I1_3(0,xi_m,xi_p) + cs.c2 * I1_3(0,xi_p,xi_m) + cs.c3 * I2_3(0,xi_m,xi_p));
-        };
+        }
         auto make_diff_decay_rate_function_to_nu_2lep(const derived_params& dparams, double lep_minus_mass, double lep_plus_mass,
             const c_struct& cs, int plus_minus /* helicity */) {
           const double HNL_mass = dparams.raw_params.HNL_mass;
@@ -133,7 +133,7 @@ namespace dkgen {
               return (A02 + plus_minus * A12)/total_rate/12.;
             };
           return diff_decay_rate;
-        };
+        }
 
         double c1_nu_dirac(const derived_params& dparams, flavour l1, flavour l2) { 
           double tot = 0.;
@@ -144,13 +144,13 @@ namespace dkgen {
             // (1 + 2 gL) in all the other formulas, unlike 1905.00284.pdf
           }
           return tot;
-        };
+        }
         double c1_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) {
           return l1==l2 ? dparams.sum_U2 * dparams.gR*dparams.gR : 0.;
-        };
+        }
         double c2_nu_dirac(const derived_params& dparams, flavour l1, flavour l2) {
           return l1==l2 ? dparams.sum_U2 * dparams.gR*dparams.gR : 0.;
-        };
+        }
         double c2_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { 
           double tot = 0.;
           for(auto fl: { flavour::e, flavour::m, flavour::t }) {
@@ -160,7 +160,7 @@ namespace dkgen {
             // (1 + 2 gL) in all the other formulas, unlike 1905.00284.pdf
           }
           return tot;
-        };
+        }
         double c3_nu_dirac(const derived_params& dparams, flavour l1, flavour l2) { 
           if(l1 != l2) return 0.;
           double tot = 0.;
@@ -170,7 +170,7 @@ namespace dkgen {
             tot += U2 * ((fl==l2? 1. : 0.) + dparams.gL);
           }
           return tot*dparams.gR;
-        };
+        }
         double c3_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { 
           if(l1 != l2) return 0.;
           double tot = 0.;
@@ -180,46 +180,46 @@ namespace dkgen {
             tot += U2 * ((fl==l1? 1. : 0.) + dparams.gL);
           }
           return tot*dparams.gR;
-        };
+        }
 
         auto c4_nu_dirac = c1_nu_dirac;
         auto c5_nu_dirac = c2_nu_dirac;
         auto c6_nu_dirac = c3_nu_dirac;
-        double c4_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { return -c1_nubar_dirac(dparams,l1,l2); };
-        double c5_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { return -c2_nubar_dirac(dparams,l1,l2); };
-        double c6_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { return -c3_nubar_dirac(dparams,l1,l2); };
+        double c4_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { return -c1_nubar_dirac(dparams,l1,l2); }
+        double c5_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { return -c2_nubar_dirac(dparams,l1,l2); }
+        double c6_nubar_dirac(const derived_params& dparams, flavour l1, flavour l2) { return -c3_nubar_dirac(dparams,l1,l2); }
 
         double c1_nu_major(const derived_params& dparams, flavour l1, flavour l2) {
-          return c1_nu_dirac(dparams,l1,l2) + c1_nubar_dirac(dparams,l1,l2); };
+          return c1_nu_dirac(dparams,l1,l2) + c1_nubar_dirac(dparams,l1,l2); }
         double c2_nu_major(const derived_params& dparams, flavour l1, flavour l2) {
-          return c2_nu_dirac(dparams,l1,l2) + c2_nubar_dirac(dparams,l1,l2); };
+          return c2_nu_dirac(dparams,l1,l2) + c2_nubar_dirac(dparams,l1,l2); }
         double c3_nu_major(const derived_params& dparams, flavour l1, flavour l2) {
-          return c3_nu_dirac(dparams,l1,l2) + c3_nubar_dirac(dparams,l1,l2); };
+          return c3_nu_dirac(dparams,l1,l2) + c3_nubar_dirac(dparams,l1,l2); }
         double c4_nu_major(const derived_params& dparams, flavour l1, flavour l2) {
-          return c4_nu_dirac(dparams,l1,l2) - c4_nubar_dirac(dparams,l1,l2); };
+          return c4_nu_dirac(dparams,l1,l2) - c4_nubar_dirac(dparams,l1,l2); }
         double c5_nu_major(const derived_params& dparams, flavour l1, flavour l2) {
-          return c5_nu_dirac(dparams,l1,l2) - c5_nubar_dirac(dparams,l1,l2); };
+          return c5_nu_dirac(dparams,l1,l2) - c5_nubar_dirac(dparams,l1,l2); }
         double c6_nu_major(const derived_params& dparams, flavour l1, flavour l2) {
-          return c6_nu_dirac(dparams,l1,l2) - c6_nubar_dirac(dparams,l1,l2); };
+          return c6_nu_dirac(dparams,l1,l2) - c6_nubar_dirac(dparams,l1,l2); }
 
         double c1_final(const derived_params& dparams, bool majorana, flavour l1, flavour l2) {
           return majorana ? c1_nu_major(dparams,l1,l2) : c1_nu_dirac(dparams,l1,l2);
-        };
+        }
         double c2_final(const derived_params& dparams, bool majorana, flavour l1, flavour l2) {
           return majorana ? c2_nu_major(dparams,l1,l2) : c2_nu_dirac(dparams,l1,l2);
-        };
+        }
         double c3_final(const derived_params& dparams, bool majorana, flavour l1, flavour l2) {
           return majorana ? c3_nu_major(dparams,l1,l2) : c3_nu_dirac(dparams,l1,l2);
-        };
+        }
         double c4_final(const derived_params& dparams, bool majorana, flavour l1, flavour l2) {
           return majorana ? c4_nu_major(dparams,l1,l2) : c4_nu_dirac(dparams,l1,l2);
-        };
+        }
         double c5_final(const derived_params& dparams, bool majorana, flavour l1, flavour l2) {
           return majorana ? c5_nu_major(dparams,l1,l2) : c5_nu_dirac(dparams,l1,l2);
-        };
+        }
         double c6_final(const derived_params& dparams, bool majorana, flavour l1, flavour l2) {
           return majorana ? c6_nu_major(dparams,l1,l2) : c6_nu_dirac(dparams,l1,l2);
-        };
+        }
 
         c_struct c_all_final(const derived_params& dparams, 
             bool majorana, flavour l1, flavour l2) {
@@ -228,7 +228,7 @@ namespace dkgen {
             c3_final(dparams,majorana, l1, l2), c4_final(dparams,majorana, l1, l2),
             c5_final(dparams,majorana, l1, l2), c6_final(dparams,majorana, l1, l2)
           };
-        };
+        }
 
         using hnl_decay_width_map_t = std::map<decay_modes,double>;
         

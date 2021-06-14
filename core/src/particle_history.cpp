@@ -1,6 +1,8 @@
 #include "dkgen/core/particle_history.hpp"
 
 #include <cstdio> // for std::snprintf
+#include <functional>
+#include <algorithm>
 
 #include "dkgen/core/decaying_particle_info.hpp"
 

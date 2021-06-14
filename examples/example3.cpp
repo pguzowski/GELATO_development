@@ -12,6 +12,7 @@
 #include <TLorentzVector.h>
 
 
+
 //#include "../../development_misc/arXiv_1905_00284.hpp"
 #include "dkgen/physics/heavy_neutral_leptons.hpp"
 /*
@@ -31,7 +32,7 @@
     -r: output ROOT file
     -H: output HEPEVT text file
     
-    -g: beamline/detector geometry (bnb or numi)
+    -g: beamline/detector geometry (bnb or numi or sbnd) 
     
     -i: input flux file
     -p: POT in the flux file
@@ -39,15 +40,19 @@
     
     -D: HNL decay modes to use (e_pi, mu_pi, or all)
     -f: force decays inside detector
+
+    -w: unweighted mode (with estimate of max weight)
+    -W: unweighted mode (with number of burn samples to estimate max weight)
     
     -d: debug mode (print decay table & exit)
 
   */
 
+
 int main(int argc, char** argv) {
   size_t n_to_gen = 10;
   long long max_n_to_output = -1;
-  double mass = 0.140, Ue4 = 0, Um4 = 0, Ut4 = 0;
+  double mass = -1, Ue4 = 0, Um4 = 0, Ut4 = 0;
   bool force = false, majorana = false, debug = false;
   std::string fluxfn = "";
   double pot_per_flux_file = 100e3;
@@ -56,7 +61,9 @@ int main(int argc, char** argv) {
   std::string hepfn = "";
   std::string decay_mode = "all";
   std::string flux_mode = "all";
-  bool is_numi = false;
+  std::string geo_type = "bnb";
+  double max_weight = -1.;
+  size_t unweighted_burn_size = 0;
   for(int i = 0; i < argc; ++i) {
     if(i+1 < argc && std::string(argv[i]) == "-n") { // number initial particles to gen
       n_to_gen = std::atoll(argv[i+1]);
@@ -128,18 +135,22 @@ int main(int argc, char** argv) {
       continue;
     }
     if(i+1 < argc && std::string(argv[i]) == "-g") { // production modes to simulate
-      std::string arg = argv[i+1];
+      geo_type = argv[i+1];
       i++;
-      if(arg == "numi") {
-        is_numi = true;
-      }
-      else if(arg == "bnb") {
-        is_numi = false;
-      }
-      else {
-        std::cerr << " Geometry type "<<arg<<" must be 'bnb' or 'numi' (default bnb)"<<std::endl;
+      if(geo_type != "bnb" && geo_type != "numi" && geo_type != "sbnd") {
+        std::cerr << " Geometry type "<<geo_type<<" must be 'bnb' or 'numi' or 'sbnd' (default bnb)"<<std::endl;
         return -1;
       }
+      continue;
+    }
+    if(i+1 < argc && std::string(argv[i]) == "-w") { // unweighted mode; estimate of max weight
+      max_weight = std::atof(argv[i+1]);
+      i++;
+      continue;
+    }
+    if(i+1 < argc && std::string(argv[i]) == "-W") { // unweighted mode; number of burn samples to run
+      unweighted_burn_size = std::atoll(argv[i+1]);
+      i++;
       continue;
     }
     if(std::string(argv[i]) == "-f") {
@@ -159,6 +170,11 @@ int main(int argc, char** argv) {
     std::cerr << " Must set a mixing angle -E/-M/-T" << std::endl;
     return 1;
   }
+  if(mass < 0 || mass > .5) {
+    std::cerr << " Must set a HNL mass (<0.5 GeV)" << std::endl;
+    return 1;
+  }
+
 
   dkgen::core::driver driver;
 
@@ -167,7 +183,7 @@ int main(int argc, char** argv) {
   conf.set_force_decays_in_detector(force);
   driver.set_config(conf);
   
-  if(is_numi) {
+  if(geo_type == "numi") {
   /*
    *                NUMI 
    */
@@ -177,11 +193,15 @@ int main(int argc, char** argv) {
                                         { -0.38947144863934973769,    0.053832413938664107345,  0.91946400794392302291  }));
   driver.set_geometry(geo);
 
-  } else {
+  } else if(geo_type=="bnb") {
   /*
    *                BNB
    */
   dkgen::core::geometry geo({0., 0., 475e2}, {1.25e2, 1.25e2, 5e2});
+  driver.set_geometry(geo);
+  }
+  else if(geo_type == "sbnd") {
+  dkgen::core::geometry geo({-74., 0., 110e2}, {2e2, 2e2, 2.5e2}); // sbnd is not directly on-axis, but offset by ~0.75m in x
   driver.set_geometry(geo);
   }
   
@@ -189,12 +209,15 @@ int main(int argc, char** argv) {
   //const double scalar_theta = theta;
   //const std::string metadata = "";
   const std::string metadata{
-    (std::ostringstream()
-     << (majorana ? "type=Majorana" : "type=Dirac")
-     <<" U_e4=" << Ue4
-     <<" U_m4=" << Um4
-     <<" U_t4=" << Ut4
-     ).str()
+    [=]() {
+      std::ostringstream s;
+      s
+        << (majorana ? "type=Majorana" : "type=Dirac")
+        <<" U_e4=" << Ue4
+        <<" U_m4=" << Um4
+        <<" U_t4=" << Ut4
+        ;
+      return s.str();}()
   };
   
   namespace hnl = dkgen::physics::heavy_neutral_leptons;
@@ -339,6 +362,32 @@ int main(int argc, char** argv) {
     long long n_output = 0;
     auto fluxiter = input_flux.begin();
     int nloops = 0;
+    double sum_weight = 0.;
+    double pot_burnt = 0.;
+
+    if(max_weight > 0. || unweighted_burn_size > 0) {
+      if(max_weight <= 0.) {
+        size_t nburnt = 0;
+        while(nburnt < unweighted_burn_size) {
+          auto const& rrr = driver.generate_decays(*fluxiter, [&rng, &gen]()->double{return rng(gen);});
+          if(rrr) {
+            auto const& res = rrr.build_hepevt_output();
+            //std::cerr << "Burning "<<nburnt <<" with w="<<res.total_weight<<std::endl;
+            if(res.total_weight > max_weight) {
+              max_weight = 1.1*res.total_weight;
+              //std::cout << "Burnt "<<nburnt << " setting max_weight to "<<max_weight<<std::endl;
+            }
+            nburnt++;
+          }
+          fluxiter++;
+          if(fluxiter==input_flux.end()) {
+            fluxiter=input_flux.begin();
+          }
+        }
+        std::cout << "Burnt "<<nburnt<<" events and found max_weight = "<<max_weight<<std::endl;
+        pot_burnt = pot_per_flux_file * std::distance(input_flux.begin(),fluxiter)/input_flux.size();
+      }
+    }
 
     TFile *rootf = rootfn.empty() ? 0 : new TFile(rootfn.c_str(), "recreate");
     TTree *t = 0;
@@ -364,9 +413,9 @@ int main(int argc, char** argv) {
       decpos = new TLorentzVector;
       t->Branch("mesmom",&p0mom);
       t->Branch("mespos",&p0pos);
-      t->Branch("p1",&p1);
-      t->Branch("p2",&p2);
-      t->Branch("p3",&p3);
+      t->Branch("p1",&p1); // momentum of first daughter
+      t->Branch("p2",&p2); // momentum of second daughter
+      t->Branch("p3",&p3); // momentum of third daughter
       t->Branch("phnl",&phnl);
       t->Branch("decpos",&decpos);
       t->Branch("type",&dtype);
@@ -379,8 +428,19 @@ int main(int argc, char** argv) {
     }
     while(n_to_gen==0 || i++ < n_to_gen) {
       auto const& res = driver.generate_decays(*fluxiter, [&rng, &gen]()->double{return rng(gen);});
-      if(res && (max_n_to_output  < 1 || n_output++ < max_n_to_output)) {
-        auto const& hepevt = res.build_hepevt_output();
+      if(res && (max_n_to_output  < 1 || n_output < max_n_to_output)) {
+        auto hepevt = res.build_hepevt_output();
+        if(max_weight > 0) {
+          const double weight = hepevt.total_weight;
+          if(weight > max_weight) {
+            std::cerr << "Error! Weight found "<<weight<<" > max_weight "<<max_weight<<"; output may be unrepresentative of truth."<<std::endl;
+            break;
+          }
+          const double u = rng(gen);
+          if(weight < u * max_weight) continue;
+          hepevt.total_weight = 1.;
+        }
+        sum_weight += hepevt.total_weight;
         if(has_hepout) {
           hepout << hepevt.build_text();
         }
@@ -409,7 +469,7 @@ int main(int argc, char** argv) {
             }
             number_of_particle_in_list++;
           }
-          
+
           // dtypes:
           dtype=0;
           std::sort(pdgs.begin(),pdgs.end());
@@ -427,7 +487,7 @@ int main(int argc, char** argv) {
           }
           t->Fill();
         }
-        if(n_output >= max_n_to_output) break;
+        if(++n_output >= max_n_to_output) break;
       }
       fluxiter++;
       if(fluxiter==input_flux.end()) {
@@ -435,13 +495,17 @@ int main(int argc, char** argv) {
         nloops++;
       }
     }
+    const double tot_pot = (max_weight > 0. ? 1./max_weight : 1.)
+      * (pot_per_flux_file * (nloops + std::distance(input_flux.begin(),fluxiter) * 1./input_flux.size()) - pot_burnt);
     if(rootf) {
+      t->SetTitle(Form("pot: %f",tot_pot));
       t->Write();
       rootf->Close();
+      delete rootf;
+      rootf=0;
     }
-    const double tot_pot = nloops * pot_per_flux_file + pot_per_flux_file * std::distance(input_flux.begin(),fluxiter)/input_flux.size();
     if(has_hepout) {
-      hepout << "# weight=0 pot_per_flux_file=" << pot_per_flux_file
+      hepout << "#END total_weight="<<sum_weight<<" pot_per_flux_file=" << pot_per_flux_file
       << " total_pot="<<tot_pot<<" "<<metadata<<std::endl;
     }
   }

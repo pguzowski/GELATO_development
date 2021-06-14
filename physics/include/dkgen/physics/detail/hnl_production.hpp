@@ -74,7 +74,7 @@ namespace dkgen {
           const double sub = xi_N - xi_l;
           return dparams.U2(fl) * sqrt_kl * (xi_l + xi_N - std::pow(sub,2) + plus_minus * sub * sqrt_kl)
             / (2.* xi_l * std::pow(1. - xi_l,2));
-        };
+        }
 
         double P_decay_rate_to_semilepton_Pprime(const derived_params& dparams, flavour fl,
             double pseudoscalar_mass, double lep_mass, double pprime_mass, double CKM_V2,
@@ -86,7 +86,7 @@ namespace dkgen {
           const double xi_l = std::pow(lep_mass/pseudoscalar_mass,2);
           const double prefac = dparams.gFermi2 * dparams.m5 * dparams.pi3_inv / 128. * dparams.U2(fl) * CKM_V2;
           return prefac * I_h1(xi_h, xi_l, xi_N, f0_P_Pprime, lam_plus_P_Pprime, lam_0_P_Pprime, plus_minus);
-        };
+        }
 
         using decay_width_map_t = std::map<hnl_helicities,std::map<production_modes, double>>;
 
@@ -209,7 +209,7 @@ namespace dkgen {
 #endif
           }        
           return decay_rates;
-        };
+        }
 
         // calculates branching ratio of kaon to all possible modes of HNL, so that
         // weights can be applied to final event for given model parameters
@@ -599,7 +599,7 @@ namespace dkgen {
             };
           }
           return 12. * detail::integration::integrate(integrand, std::pow(std::sqrt(x)+std::sqrt(y),2), std::pow(1.-std::sqrt(z),2));
-        };
+        }
 
         // for mu+ -> e+ + ... (so for antiparticles)
         // split this into UalphaN and UbetaN for later use

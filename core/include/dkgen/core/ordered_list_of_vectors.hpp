@@ -21,7 +21,7 @@ namespace dkgen {
               transform(kv.second);
             }
             return *this;
-          };
+          }
       private:
         std::vector<std::pair<double,vector3>> map;
     };

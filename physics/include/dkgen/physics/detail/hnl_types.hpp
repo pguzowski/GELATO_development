@@ -93,6 +93,9 @@ namespace dkgen {
               case flavour::t:
                 return U2_t;
             }
+            // should never reach here, but gcc warns about
+            // control reaching end of non-void funciton
+            return 0.;
           }
         };
       }

@@ -56,7 +56,13 @@ int main(int argc, char** argv) {
 
   const double scalar_mass = mass; // GeV
   const double scalar_theta = theta;
-  const std::string metadata{(std::ostringstream() << "model_theta=" << scalar_theta).str()};
+  const std::string metadata{
+    [=](){
+      std::ostringstream s;
+      s << "model_theta=" << scalar_theta;
+      return s.str();
+    }()
+  };
   //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
   driver.set_particle_content(dkgen::physics::higgs_portal_from_kaons::create_particle_content(scalar_mass, scalar_theta,conf));
 
