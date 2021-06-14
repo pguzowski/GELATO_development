@@ -96,9 +96,6 @@ namespace dkgen {
                 [](double total1, auto& map2) {
                 return std::accumulate(map2.second.begin(), map2.second.end(), total1,
                     [](double total2, auto& pair){
-#ifdef DEBUG
-                    std::cout << "sum_decay_widths: "<<pair.second << std::endl;
-#endif
                       return total2 + pair.second;
                     });
                 }
@@ -106,8 +103,8 @@ namespace dkgen {
           }
 
         constexpr double f0_k_pi = 0.9706; // https://arxiv.org/abs/1902.08191
-        constexpr double lam_plus_k_pi = 0.0309; // PDG
-        constexpr double lam_0_k_pi = 0.0173; // PDG
+        constexpr double lam_plus_k_pi = 2.97e-2; // PDG (nb tables in pdg are in units 10^-2)
+        constexpr double lam_0_k_pi = 1.95e-2; // PDG
 
 
 
@@ -135,7 +132,7 @@ namespace dkgen {
             / dparams.config.physical_params().find_particle("kaon_pm").lifetime;
 
           const double kaon_pm_m2_BR = 0.6356;
-          const double kaon_pm_e2_BR = 0.0016;
+          const double kaon_pm_e2_BR = 1.582e-5;
 
           const double CKM_Vus2 = std::pow(dparams.config.physical_params().CKM_Vus,2);
 
@@ -251,16 +248,10 @@ namespace dkgen {
 
           if(kaon_pm_mass > HNL_mass + muon_mass && dparams.U2(flavour::m) > 0.
               && production_mode_enabled(production_modes::k_mu2,production_modes_to_use)) {
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_poshel[production_modes::k_mu2]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             charged_kaon.add_decay({
                 K_decay_rates_poshel[production_modes::k_mu2]/total_kaon_decay_rate,
                 {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state}}
                 });
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_neghel[production_modes::k_mu2]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             charged_kaon.add_decay({
                 K_decay_rates_neghel[production_modes::k_mu2]/total_kaon_decay_rate,
                 {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state}}
@@ -268,16 +259,10 @@ namespace dkgen {
           }
           if(kaon_pm_mass > HNL_mass + elec_mass && dparams.U2(flavour::e) > 0.
               && production_mode_enabled(production_modes::k_e2,production_modes_to_use)) {
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_poshel[production_modes::k_e2]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             charged_kaon.add_decay({
                 K_decay_rates_poshel[production_modes::k_e2]/total_kaon_decay_rate,
                 {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state}}
                 });
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_neghel[production_modes::k_e2]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             charged_kaon.add_decay({
                 K_decay_rates_neghel[production_modes::k_e2]/total_kaon_decay_rate,
                 {{HNL_pdg_neghel,NOT_final_state},{-elec_pdg,final_state}}
@@ -285,9 +270,6 @@ namespace dkgen {
           }
           if(kaon_pm_mass > HNL_mass + muon_mass + pion_0_mass && dparams.U2(flavour::m) > 0.
               && production_mode_enabled(production_modes::k_mu3,production_modes_to_use)) {
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_poshel[production_modes::k_mu3]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             if(K_decay_rates_poshel[production_modes::k_mu3] < 0 && std::abs(K_decay_rates_poshel[production_modes::k_mu3]/total_kaon_decay_rate) < 1e-5) {
               K_decay_rates_poshel[production_modes::k_mu3] = -K_decay_rates_poshel[production_modes::k_mu3];
             }
@@ -295,9 +277,6 @@ namespace dkgen {
                 K_decay_rates_poshel[production_modes::k_mu3]/total_kaon_decay_rate,
                 {{HNL_pdg_poshel,NOT_final_state},{-muon_pdg,final_state},{pion_0_pdg,final_state}}
                 });
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_neghel[production_modes::k_mu3]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             if(K_decay_rates_neghel[production_modes::k_mu3] < 0 && std::abs(K_decay_rates_neghel[production_modes::k_mu3]/total_kaon_decay_rate) < 1e-5) {
               K_decay_rates_neghel[production_modes::k_mu3] = -K_decay_rates_neghel[production_modes::k_mu3];
             }
@@ -309,9 +288,6 @@ namespace dkgen {
           }
           if(kaon_pm_mass > HNL_mass + elec_mass + pion_0_mass && dparams.U2(flavour::e)
               && production_mode_enabled(production_modes::k_e3,production_modes_to_use)) {
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_poshel[production_modes::k_e3]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             if(K_decay_rates_poshel[production_modes::k_e3] < 0 && std::abs(K_decay_rates_poshel[production_modes::k_e3]/total_kaon_decay_rate) < 1e-5) {
               K_decay_rates_poshel[production_modes::k_e3] = -K_decay_rates_poshel[production_modes::k_e3];
             }
@@ -319,9 +295,6 @@ namespace dkgen {
                 K_decay_rates_poshel[production_modes::k_e3]/total_kaon_decay_rate,
                 {{HNL_pdg_poshel,NOT_final_state},{-elec_pdg,final_state},{pion_0_pdg,final_state}}
                 });
-#ifdef DEBUG
-            std::cerr << "adding: "<< K_decay_rates_neghel[production_modes::k_e3]<<"/"<<total_kaon_decay_rate<<std::endl;
-#endif
             if(K_decay_rates_neghel[production_modes::k_e3] < 0 && std::abs(K_decay_rates_neghel[production_modes::k_e3]/total_kaon_decay_rate) < 1e-5) {
               K_decay_rates_neghel[production_modes::k_e3] = -K_decay_rates_neghel[production_modes::k_e3];
             }
@@ -437,9 +410,6 @@ namespace dkgen {
 
           if(kaon_0L_mass > HNL_mass + muon_mass + pion_pm_mass && dparams.U2(flavour::m) > 0.
               && production_mode_enabled(production_modes::k0_mu,production_modes_to_use)) {
-#ifdef DEBUG
-         std::cerr << "adding: "<< K0_decay_rates_poshel[production_modes::k0_mu]<<"/"<<total_k0_decay_rate<<std::endl;
-#endif
 
             neutral_kaon.add_decay({
                 .5 * K0_decay_rates_poshel[production_modes::k0_mu]/total_k0_decay_rate,
@@ -449,9 +419,6 @@ namespace dkgen {
                 .5 * K0_decay_rates_poshel[production_modes::k0_mu]/total_k0_decay_rate,
                 {{-HNL_pdg_poshel,NOT_final_state},{muon_pdg,final_state},{pion_pm_pdg,final_state}}
                 });
-#ifdef DEBUG
-         std::cerr << "adding: "<< K0_decay_rates_neghel[production_modes::k0_mu]<<"/"<<total_k0_decay_rate<<std::endl;
-#endif
             neutral_kaon.add_decay({
                 .5 * K0_decay_rates_neghel[production_modes::k0_mu]/total_k0_decay_rate,
                 {{HNL_pdg_neghel,NOT_final_state},{-muon_pdg,final_state},{-pion_pm_pdg,final_state}}
@@ -511,8 +478,8 @@ namespace dkgen {
           const double total_sm_decay_rate = dparams.config.physical_params().hbar
             / dparams.config.physical_params().find_particle("pion_pm").lifetime;
 
-          const double pion_pm_m2_BR = 0.9998;
-          const double pion_pm_e2_BR = 0.0001;
+          const double pion_pm_m2_BR = 0.99988;
+          const double pion_pm_e2_BR = 1.23e-4;
 
           const double HNL_mass = dparams.raw_params.HNL_mass;
           const double muon_mass = dparams.muon_mass;

@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   size_t n_to_gen = 10;
   double mass = 0.140, theta = 1e-3;
   bool force = false;
-  for(int i = 0; i < argc /* as -n option will have argument */; ++i) {
+  for(int i = 0; i < argc; ++i) {
     if(i+1 < argc && std::string(argv[i]) == "-n") {
       n_to_gen = std::atoll(argv[i+1]);
       i++;

@@ -23,10 +23,10 @@
     -N: numer of HNL decays in detector to output
     
     -m: mass of HNL
-    -E: U_e4 model paremeter
-    -M: U_mu4 model paremeter
-    -T: U_tau4 model paremeter
-    -j: Majorana HNL
+    -E: U_e4 model paremeter (default 0)
+    -M: U_mu4 model paremeter (default 0)
+    -T: U_tau4 model paremeter (default 0)
+    -j: Majorana HNL (default false/Dirac)
 
     -r: output ROOT file
     -H: output HEPEVT text file
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
   std::string decay_mode = "all";
   std::string flux_mode = "all";
   bool is_numi = false;
-  for(int i = 0; i < argc /* as -n option will have argument */; ++i) {
+  for(int i = 0; i < argc; ++i) {
     if(i+1 < argc && std::string(argv[i]) == "-n") { // number initial particles to gen
       n_to_gen = std::atoll(argv[i+1]);
       i++;
@@ -258,11 +258,14 @@ int main(int argc, char** argv) {
 
     if(debug) {
       for(auto p : particles) {
-        std::cout << "particle "<<p.pdg()<< " lifetime: "<<p.lifetime() <<std::endl;
+        std::cout << "particle "<<p.pdg()<< " lifetime: ";
+        if(p.lifetime() < 0) std::cout << "(stable)"<<std::endl;
+        else std::cout << p.lifetime() << std::endl;
+        size_t idgt = 0;
         for(auto d : p.get_decay_table()) {
-          std::cout << "  decay BR="<<d.branching_ratio<< "  --->";
+          std::cout << "   "<<(++idgt==p.get_decay_table().size()?"└":"├")<<"─ decay BR="<<d.branching_ratio<< "  ───►";
           for(auto m : d.daughters) {
-            std::cout <<" " << m.first << (m.second ? " F":" D");
+            std::cout <<" " << m.first << (m.second ? " (Final)":" (Decaying)");
           }
           std::cout <<std::endl;
         }
