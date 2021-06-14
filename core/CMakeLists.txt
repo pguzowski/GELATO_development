@@ -44,7 +44,7 @@ if(NOT EXPOSE_PHYSICS_VECTORS)
       set(OUTVAR ${ARGV3})
       file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx "#include <${INCFILE}>\nclass derived: public ${CLASSNAME} { };\ntemplate<size_t N> char sizeof_() { return N+256; }\nauto _ = sizeof_<sizeof(derived)>;")
     else()
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx "template<size_t N> char sizeof_() { return N+256; }\nauto _ = sizeof_<314159265>;")
+      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx "#include \"stddef.h\"\ntemplate<size_t N> char sizeof_() { return N+256; }\nconstexpr size_t M=314159265;\nauto _ = sizeof_<M>;")
     endif()
     try_compile(RESULT_VAR ${CMAKE_CURRENT_BINARY_DIR}/test_compile ${CMAKE_CURRENT_BINARY_DIR}/test_compile.cxx
       CXX_STANDARD 14
