@@ -22,7 +22,7 @@ namespace dkgen {
         template<typename T, typename U>
         inline bool production_mode_enabled(T pm, const U& production_modes_to_use) {
           return std::find(production_modes_to_use.begin(), production_modes_to_use.end(), pm) != production_modes_to_use.end();
-        };
+        }
 
         double I_h1(double x, double y, double z, double f0, double lam_plus, double lam_0, int plus_minus) {
           namespace detint = detail::integration;
@@ -610,7 +610,7 @@ namespace dkgen {
           const double xi_l = std::pow(child_mass/parent_mass,2);
           const double prefac = dparams.gFermi2 * dparams.m5 * dparams.pi3_inv / 192. * U2;
           return prefac * (anti ? I_l(0.,xi_l,xi_N,plus_minus,anti) : I_l(xi_N,xi_l,0.,plus_minus,!anti));
-        };
+        }
 
         using muon_decay_width_map_t = std::map<hnl_helicities,std::map<muon_production_modes, double>>;
         muon_decay_width_map_t get_muon_decay_widths(const derived_params& dparams,
