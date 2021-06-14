@@ -30,7 +30,7 @@ namespace dkgen {
         
         particle_map particle_content;
         geometry geo;
-        config config;
+        ::dkgen::core::config config;
 
         // recursively generate decay positions, forcing some into the detector if
         // possible and "force_decays_inside_detector" config flag is on
