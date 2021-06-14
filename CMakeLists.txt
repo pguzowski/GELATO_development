@@ -12,4 +12,4 @@ endif()
 
 add_subdirectory(core)
 add_subdirectory(physics)
-add_subdirectory(test)
+add_subdirectory(examples)
