@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <vector>
+#include <cmath>
 
 #undef DEBUG
 #ifdef DEBUG

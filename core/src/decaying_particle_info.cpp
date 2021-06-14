@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <cmath>
 
 void dkgen::core::particle_info::reset_decay_position() {
   dec_pos = prod_pos;
