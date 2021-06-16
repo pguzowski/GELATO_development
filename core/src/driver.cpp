@@ -135,7 +135,7 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
       decay_set = true;
     }
 
-    if(parent->is_pre_final_state()) {
+    if(!decay_set && parent->is_pre_final_state()) {
       // we have to force the decay position to be inside the detector, if possible
 
       const vector3& direction = parent->production_momentum().vect().unit();
@@ -190,11 +190,6 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
 }
 
 const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int pdg) const {
-  // first check if pdg exists
-  //auto sorter = [](auto& a, int find_pdg) { return a.pdg() < find_pdg; };
-  //auto p1 = std::lower_bound(particle_content.begin(), particle_content.end(), pdg, sorter);
-  //if(p1 != particle_content.end() && p1->pdg() == pdg) return *p1;
-  // then check if abs(pdg) exists for antiparticle
   auto p = std::lower_bound(particle_content.begin(), particle_content.end(), std::abs(pdg),
       [](auto& a, int find_pdg) { return std::abs(a.pdg()) < find_pdg; });
   if (p == particle_content.end() || std::abs(p->pdg()) != std::abs(pdg)) {

@@ -87,6 +87,9 @@ if(NOT EXPOSE_PHYSICS_VECTORS)
     "include/dkgen/core/physics_vector_sizes.hpp.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/dkgen/core/physics_vector_sizes.hpp"
     )
+  install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/include/dkgen/core/physics_vector_sizes.hpp"
+    DESTINATION include/dkgen/core/)
 endif()
 
 
@@ -117,7 +120,39 @@ elseif(PHYSICS_BACKEND STREQUAL "ROOT")
   target_compile_definitions(dkgen PRIVATE USING_ROOT)
   target_link_libraries(dkgen PRIVATE ROOT::Physics)
 endif()
-target_include_directories(dkgen PUBLIC include)
+target_include_directories(dkgen PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 if(NOT EXPOSE_PHYSICS_VECTORS)
-  target_include_directories(dkgen PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/include")
+  target_include_directories(dkgen PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
 endif()
+
+install(TARGETS dkgen
+  EXPORT dkgenTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+  )
+install(FILES
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/config.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/decaying_particle_info.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/driver.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/geometry.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/ordered_list_of_vectors.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/particle.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/particle_history.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/random_number_generators.hpp"
+  "${PROJECT_SOURCE_DIR}/core/include/dkgen/core/vectors.hpp"
+  DESTINATION include/dkgen/core/)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    dkgenConfigVersion.cmake
+    VERSION ${PACKAGE_VERSION}
+    COMPATIBILITY AnyNewerVersion
+    )
+
+install(EXPORT dkgenTargets
+        FILE dkgenTargets.cmake
+        NAMESPACE dkgen::
+        DESTINATION lib/cmake/dkgen
+         )

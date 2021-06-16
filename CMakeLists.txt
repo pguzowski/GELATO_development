@@ -9,7 +9,10 @@ elseif(CMAKE_BUILD_TYPE=Debug)
   add_compile_options(-O0 -g -DDEBUG)
 endif()
 
+set(BUILD_EXAMPLES ON CACHE BOOL "Whether to build the examples")
 
 add_subdirectory(core)
 add_subdirectory(physics)
-add_subdirectory(examples)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
