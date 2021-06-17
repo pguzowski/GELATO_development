@@ -1,5 +1,5 @@
-#ifndef __dkgen_core_vectors_hpp__
-#define __dkgen_core_vectors_hpp__
+#ifndef __GELATO_core_vectors_hpp__
+#define __GELATO_core_vectors_hpp__
 
 #ifdef EXPOSE_PHYSICS_VECTORS
 
@@ -10,7 +10,7 @@
 #include <CLHEP/Vector/ThreeVector.h>
 #include <CLHEP/Vector/LorentzVector.h>
 #include <CLHEP/Vector/Rotation.h>
-namespace dkgen {
+namespace GELATO {
   namespace core {
     using vector3 = CLHEP::Hep3Vector;
     using fourvector = CLHEP::HepLorentzVector;
@@ -30,9 +30,9 @@ namespace dkgen {
 #include <memory>
 //#include <experimental/propagate_const>
 
-#include "dkgen/core/physics_vector_sizes.hpp"
+#include "GELATO/core/physics_vector_sizes.hpp"
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     class vector3 {
       public:
@@ -165,12 +165,12 @@ namespace dkgen {
 }
 
 // needs to be outside namespaces to overload global operator*
-inline dkgen::core::vector3 operator*(double a, const dkgen::core::vector3& b) {
+inline GELATO::core::vector3 operator*(double a, const GELATO::core::vector3& b) {
   return b*a;
 }
 #endif // EXPOSE_PHYSICS_VECTORS
 
 
 
-#endif // __dkgen_core_vectors_hpp__
+#endif // __GELATO_core_vectors_hpp__
 

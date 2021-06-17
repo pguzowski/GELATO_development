@@ -1,17 +1,17 @@
-#ifndef __dkgen_physics_higgs_portal_scalar_hpp__
-#define __dkgen_physics_higgs_portal_scalar_hpp__
+#ifndef __GELATO_physics_higgs_portal_scalar_hpp__
+#define __GELATO_physics_higgs_portal_scalar_hpp__
 
-#include "dkgen/core/driver.hpp"
-#include "dkgen/core/particle.hpp"
+#include "GELATO/core/driver.hpp"
+#include "GELATO/core/particle.hpp"
 
 #include <cmath>
 
-namespace dkgen {
+namespace GELATO {
   namespace physics {
     namespace higgs_portal_from_kaons {
-      dkgen::core::driver::particle_map create_particle_content(double scalar_mass, double theta,
-          const dkgen::core::config& conf,
-          dkgen::core::driver::particle_map input = {}) {
+      GELATO::core::driver::particle_map create_particle_content(double scalar_mass, double theta,
+          const GELATO::core::config& conf,
+          GELATO::core::driver::particle_map input = {}) {
 
         auto ret = input;
 
@@ -87,12 +87,12 @@ namespace dkgen {
         const bool not_final_state = !final_state;
 
         if(scalar_mass + pion_pm_mass < kaon_pm_mass) {
-        ret.push_back(dkgen::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt}
+        ret.push_back(GELATO::core::particle_definition{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt}
             .add_decay({1.,{{pion_pm_pdg,final_state},{scalar_pdg,not_final_state}}})
             .finalise_decay_table());
         }
         if(scalar_mass + pion_0_mass < kaon_0L_mass) {
-        ret.push_back(dkgen::core::particle_definition{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt,self_conjugate}
+        ret.push_back(GELATO::core::particle_definition{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt,self_conjugate}
             .add_decay({1.,{{pion_0_pdg,final_state},{scalar_pdg,not_final_state}}})
             .finalise_decay_table());
         }
@@ -100,7 +100,7 @@ namespace dkgen {
           throw std::runtime_error("scalar mass is to heavy to produce in kaon decays!");
         }
 
-        ret.push_back(dkgen::core::particle_definition{scalar_pdg, scalar_mass, scalar_lifetime, self_conjugate});
+        ret.push_back(GELATO::core::particle_definition{scalar_pdg, scalar_mass, scalar_lifetime, self_conjugate});
         auto& scalar_info = ret.back();
 
         if(scalar_mass > 2*elec_mass) {
@@ -127,10 +127,10 @@ namespace dkgen {
 
         scalar_info.finalise_decay_table();
         
-        ret.push_back(dkgen::core::particle_definition{pion_pm_pdg,pion_pm_mass,pion_pm_lt});
-        ret.push_back(dkgen::core::particle_definition{pion_0_pdg,pion_0_mass,pion_0_lt,self_conjugate});
-        ret.push_back(dkgen::core::particle_definition{elec_pdg,elec_mass,elec_lt});
-        ret.push_back(dkgen::core::particle_definition{muon_pdg,muon_mass,muon_lt});
+        ret.push_back(GELATO::core::particle_definition{pion_pm_pdg,pion_pm_mass,pion_pm_lt});
+        ret.push_back(GELATO::core::particle_definition{pion_0_pdg,pion_0_mass,pion_0_lt,self_conjugate});
+        ret.push_back(GELATO::core::particle_definition{elec_pdg,elec_mass,elec_lt});
+        ret.push_back(GELATO::core::particle_definition{muon_pdg,muon_mass,muon_lt});
 
         return ret;
       }
@@ -138,7 +138,7 @@ namespace dkgen {
       // initial kaon branching ration to Scalars. Needed to reweight events for a given
       // model parameter
       double kaon_branching_ratio(double scalar_mass, double theta, int kaon_pdg,
-          const dkgen::core::config& conf) {
+          const GELATO::core::config& conf) {
 
         auto& kaon_pm = conf.physical_params().find_particle("kaon_pm");
         auto& kaon_0L = conf.physical_params().find_particle("kaon_0L");

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     namespace vectors {
       static constexpr size_t c_vector3_impl_size = @PHYSICS_VECTOR3_IMPL_SIZE@;

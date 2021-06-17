@@ -1,13 +1,13 @@
-#ifndef __dkgen_core_particle_history_hpp__
-#define __dkgen_core_particle_history_hpp__
+#ifndef __GELATO_core_particle_history_hpp__
+#define __GELATO_core_particle_history_hpp__
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "dkgen/core/vectors.hpp"
+#include "GELATO/core/vectors.hpp"
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     class decaying_particle_info;
     struct hepevt_particle {

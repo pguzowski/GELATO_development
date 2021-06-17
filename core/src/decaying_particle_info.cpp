@@ -1,10 +1,10 @@
-#include "dkgen/core/decaying_particle_info.hpp"
+#include "GELATO/core/decaying_particle_info.hpp"
 
 #include <algorithm>
 #include <numeric>
 #include <cmath>
 
-void dkgen::core::particle_info::reset_decay_position() {
+void GELATO::core::particle_info::reset_decay_position() {
   dec_pos = prod_pos;
   // set decay time to less than production time, to invalidate
   if(dec_pos.t() >= 0.) {
@@ -35,7 +35,7 @@ void dkgen::core::particle_info::reset_decay_position() {
 
 //Release all children. Work backwards through hierarchy to avoid
 // stack overflows in recursion if there are too many layers of children
-dkgen::core::decaying_particle_info::~decaying_particle_info() {
+GELATO::core::decaying_particle_info::~decaying_particle_info() {
   while(!children.empty()) {
     decaying_particle_info* p = this;
 
@@ -55,22 +55,22 @@ dkgen::core::decaying_particle_info::~decaying_particle_info() {
 }
 
 
-dkgen::core::decaying_particle_info&
-dkgen::core::decaying_particle_info::set_production_position(const fourvector& prodpos) {
+GELATO::core::decaying_particle_info&
+GELATO::core::decaying_particle_info::set_production_position(const fourvector& prodpos) {
   part_info.prod_pos = prodpos;
   part_info.reset_decay_position();
   return *this;
 }
 
-dkgen::core::decaying_particle_info&
-dkgen::core::decaying_particle_info::set_production_position(fourvector&& prodpos) {
+GELATO::core::decaying_particle_info&
+GELATO::core::decaying_particle_info::set_production_position(fourvector&& prodpos) {
   part_info.prod_pos = std::move(prodpos);
   part_info.reset_decay_position();
   return *this;
 }
 
 
-dkgen::core::decaying_particle_info& dkgen::core::decaying_particle_info::set_decay_pos_from_tof(double tof, double speed_of_light) {
+GELATO::core::decaying_particle_info& GELATO::core::decaying_particle_info::set_decay_pos_from_tof(double tof, double speed_of_light) {
   const double dist = part_info.momentum.beta() * tof * speed_of_light;
   const vector3& direction = part_info.momentum.vect().unit();
   const vector3& decpos = part_info.prod_pos.vect() + direction * dist;
@@ -82,7 +82,7 @@ dkgen::core::decaying_particle_info& dkgen::core::decaying_particle_info::set_de
   return *this;
 }
 
-size_t dkgen::core::decaying_particle_info::get_number_of_particles_in_hierarchy() const {
+size_t GELATO::core::decaying_particle_info::get_number_of_particles_in_hierarchy() const {
   const size_t initial = 1; // 1 for this particle
   return std::accumulate(children.begin(), children.end(), initial,
       [](size_t s, auto& c) {

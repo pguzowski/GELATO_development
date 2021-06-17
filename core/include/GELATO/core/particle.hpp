@@ -1,12 +1,12 @@
-#ifndef __dkgen_core_particle_hpp__
-#define __dkgen_core_particle_hpp__
+#ifndef __GELATO_core_particle_hpp__
+#define __GELATO_core_particle_hpp__
 
 #include <vector>
 #include <functional>
 
-#include "dkgen/core/random_number_generators.hpp"
+#include "GELATO/core/random_number_generators.hpp"
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
 
     // for fermions, can have angular distribution

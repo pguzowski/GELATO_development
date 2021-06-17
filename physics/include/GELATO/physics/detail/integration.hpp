@@ -1,9 +1,9 @@
-#ifndef __dkgen_physics_detail_integration_hpp__
-#define __dkgen_physics_detail_integration_hpp__
+#ifndef __GELATO_physics_detail_integration_hpp__
+#define __GELATO_physics_detail_integration_hpp__
 
 #include <gsl/gsl_integration.h>
 
-namespace dkgen {
+namespace GELATO {
   namespace physics {
     namespace detail {
       namespace integration {
@@ -50,5 +50,5 @@ namespace dkgen {
   }
 }
 
-#endif // __dkgen_physics_detail_integration_hpp__
+#endif // __GELATO_physics_detail_integration_hpp__
 

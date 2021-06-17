@@ -1,4 +1,4 @@
-#include "dkgen/core/driver.hpp"
+#include "GELATO/core/driver.hpp"
 
 #include <queue>
 #include <memory>
@@ -6,8 +6,8 @@
 #include <numeric>
 #include <algorithm>
 
-#include "dkgen/core/decaying_particle_info.hpp"
-#include "dkgen/core/particle.hpp"
+#include "GELATO/core/decaying_particle_info.hpp"
+#include "GELATO/core/particle.hpp"
 
 
 //#define DEBUG
@@ -16,16 +16,16 @@
 #endif
 
 /*
-dkgen::core::driver::driver() {
+GELATO::core::driver::driver() {
 }
 
-dkgen::core::driver::~driver() {
+GELATO::core::driver::~driver() {
 }
 */
 
-dkgen::core::particle_history dkgen::core::driver::generate_decays(
-    const dkgen::core::particle_info& parent_meson,
-    dkgen::core::random_uniform_0_1_generator rng
+GELATO::core::particle_history GELATO::core::driver::generate_decays(
+    const GELATO::core::particle_info& parent_meson,
+    GELATO::core::random_uniform_0_1_generator rng
     ) const {
 
   particle_history ret;
@@ -88,36 +88,36 @@ dkgen::core::particle_history dkgen::core::driver::generate_decays(
   return ret;
 }
 
-dkgen::core::driver& dkgen::core::driver::add_particle_definition(const dkgen::core::particle_definition& p) {
+GELATO::core::driver& GELATO::core::driver::add_particle_definition(const GELATO::core::particle_definition& p) {
   particle_content.push_back(p);
   sort_particles();
   return *this;
 }
 
-dkgen::core::driver& dkgen::core::driver::set_geometry(const dkgen::core::geometry& geom) {
+GELATO::core::driver& GELATO::core::driver::set_geometry(const GELATO::core::geometry& geom) {
   geo = geom;
   return *this;
 }
 
 
-dkgen::core::driver& dkgen::core::driver::set_particle_content(const particle_map& p) {
+GELATO::core::driver& GELATO::core::driver::set_particle_content(const particle_map& p) {
   particle_content = p;
   sort_particles();
   return *this;
 }
-dkgen::core::driver& dkgen::core::driver::set_particle_content(particle_map&& p) {
+GELATO::core::driver& GELATO::core::driver::set_particle_content(particle_map&& p) {
   particle_content = std::move(p);
   sort_particles();
   return *this;
 }
 
-void dkgen::core::driver::sort_particles() {
+void GELATO::core::driver::sort_particles() {
   std::sort(particle_content.begin(), particle_content.end(),
       [](auto& a, auto& b) { return std::abs(a.pdg()) < std::abs(b.pdg()); });
 }
 
 
-bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr parent,
+bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr parent,
     random_uniform_0_1_generator rng) const {
   if(!parent->is_decay_position_set() && !parent->is_final_state()) {
 
@@ -148,6 +148,9 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
         const double u = rng();
         // conversion between 0--1 to somewhere along tof1--tof2 with exponential decay
         // argument of std::log is always positive because 0<u<1, lifetime>0,tof1<tof2 => std::exp<1
+        // FIXME: this code will introduce floating-point rounding errors if p.lifetime is too big
+        //        might need a switch to a linear approximation
+        //        [too big = ~10^300 sec, i.e. much longer than lifetime of unvierse ^ many powers]
         const double tof = tof1 - p.lifetime() * std::log(1.- u + u*std::exp((tof1-tof2)/p.lifetime()));
         const double weight = std::exp(-tof1/p.lifetime()) - std::exp(-tof2/p.lifetime());
         parent->set_decay_pos_from_tof(tof, config.physical_params().speed_of_light);
@@ -189,7 +192,7 @@ bool dkgen::core::driver::generate_decay_position(decaying_particle_info_ptr par
       );
 }
 
-const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int pdg) const {
+const GELATO::core::particle_definition& GELATO::core::driver::find_particle(int pdg) const {
   auto p = std::lower_bound(particle_content.begin(), particle_content.end(), std::abs(pdg),
       [](auto& a, int find_pdg) { return std::abs(a.pdg()) < find_pdg; });
   if (p == particle_content.end() || std::abs(p->pdg()) != std::abs(pdg)) {
@@ -199,7 +202,7 @@ const dkgen::core::particle_definition& dkgen::core::driver::find_particle(int p
 }
 
 
-dkgen::core::driver& dkgen::core::driver::set_config(const dkgen::core::config& conf) {
+GELATO::core::driver& GELATO::core::driver::set_config(const GELATO::core::config& conf) {
   if(conf.physical_params().speed_of_light < 0.) {
     throw std::runtime_error("config: system of units has not been fixed yet");
   }
@@ -209,7 +212,7 @@ dkgen::core::driver& dkgen::core::driver::set_config(const dkgen::core::config& 
 
 
 void
-dkgen::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std::vector<decaying_particle_info_ptr>& queue,
+GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std::vector<decaying_particle_info_ptr>& queue,
     std::vector<decaying_particle_info_ptr>& pure_final_states,
     random_uniform_0_1_generator rng) const {
 

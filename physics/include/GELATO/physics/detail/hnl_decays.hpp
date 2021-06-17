@@ -1,12 +1,12 @@
-#ifndef __dkgen_physics_detail_hnl_decays_hpp__
-#define __dkgen_physics_detail_hnl_decays_hpp__
+#ifndef __GELATO_physics_detail_hnl_decays_hpp__
+#define __GELATO_physics_detail_hnl_decays_hpp__
 
 
-#include "dkgen/physics/detail/integration.hpp"
-#include "dkgen/physics/detail/utils.hpp"
-#include "dkgen/physics/detail/hnl_types.hpp"
+#include "GELATO/physics/detail/integration.hpp"
+#include "GELATO/physics/detail/utils.hpp"
+#include "GELATO/physics/detail/hnl_types.hpp"
 
-#include "dkgen/core/particle.hpp"
+#include "GELATO/core/particle.hpp"
 #include <cmath>
 #include <numeric>
 
@@ -15,7 +15,7 @@
 #include <iostream>
 #endif
 
-namespace dkgen {
+namespace GELATO {
   namespace physics {
     namespace detail {
       namespace hnl {
@@ -317,7 +317,7 @@ namespace dkgen {
           return decay_rates;
         }
 
-        using both_hnls_t = std::pair<dkgen::core::particle_definition,dkgen::core::particle_definition>;
+        using both_hnls_t = std::pair<GELATO::core::particle_definition,GELATO::core::particle_definition>;
         both_hnls_t make_hnl_definitions(const derived_params& dparams,
            const std::vector<decay_modes>& decay_modes_to_use) {
           
@@ -346,10 +346,10 @@ namespace dkgen {
 
           // total decay rates are helicity-independent (HNL_lifetime will apply to both helicities)
           
-          dkgen::core::particle_definition HNL_poshel_info{
+          GELATO::core::particle_definition HNL_poshel_info{
             HNL_pdg_poshel, HNL_mass, HNL_lifetime, is_majorana? self_conjugate : !self_conjugate
           };
-          dkgen::core::particle_definition HNL_neghel_info{
+          GELATO::core::particle_definition HNL_neghel_info{
             HNL_pdg_neghel, HNL_mass, HNL_lifetime, is_majorana? self_conjugate : !self_conjugate
           };
 
@@ -508,4 +508,4 @@ namespace dkgen {
 }
 #undef DEBUG
 
-#endif // __dkgen_physics_detail_hnl_hpp__
+#endif // __GELATO_physics_detail_hnl_hpp__

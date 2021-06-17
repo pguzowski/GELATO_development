@@ -1,18 +1,18 @@
-#ifndef __dkgen_physics_detail_hnl_hpp__
-#define __dkgen_physics_detail_hnl_hpp__
+#ifndef __GELATO_physics_detail_hnl_hpp__
+#define __GELATO_physics_detail_hnl_hpp__
 
-#include "dkgen/physics/detail/hnl_types.hpp"
-#include "dkgen/physics/detail/hnl_decays.hpp"
-#include "dkgen/physics/detail/hnl_production.hpp"
+#include "GELATO/physics/detail/hnl_types.hpp"
+#include "GELATO/physics/detail/hnl_decays.hpp"
+#include "GELATO/physics/detail/hnl_production.hpp"
 
-namespace dkgen {
+namespace GELATO {
   namespace physics {
     namespace detail {
       namespace hnl {
 
-        dkgen::core::driver::particle_map create_particle_content(
+        GELATO::core::driver::particle_map create_particle_content(
             const model_parameters& params,
-            const dkgen::core::config& conf,
+            const GELATO::core::config& conf,
             const std::vector<decay_modes>& decay_modes_to_use,
             const std::vector<production_modes>& production_modes_to_use,
             bool ensure_observation_possible) {
@@ -21,7 +21,7 @@ namespace dkgen {
             throw std::runtime_error("No HNL production or decay modes requested!");
           }
 
-          dkgen::core::driver::particle_map ret;
+          GELATO::core::driver::particle_map ret;
 
           const derived_params dparams(params,conf);
 
@@ -77,9 +77,9 @@ namespace dkgen {
           const double pion_0_lt  = pion_0.lifetime;
           const double elec_lt    = elec.lifetime;
 
-          ret.push_back(dkgen::core::particle_definition{pion_0_pdg,pion_0_mass,pion_0_lt,self_conjugate});
-          ret.push_back(dkgen::core::particle_definition{elec_pdg,elec_mass,elec_lt});
-          ret.push_back(dkgen::core::particle_definition{nu_pdg,0.,-1.});
+          ret.push_back(GELATO::core::particle_definition{pion_0_pdg,pion_0_mass,pion_0_lt,self_conjugate});
+          ret.push_back(GELATO::core::particle_definition{elec_pdg,elec_mass,elec_lt});
+          ret.push_back(GELATO::core::particle_definition{nu_pdg,0.,-1.});
 
           return ret;
         }
@@ -88,4 +88,4 @@ namespace dkgen {
   }
 }
 
-#endif // __dkgen_physics_detail_hnl_hpp__
+#endif // __GELATO_physics_detail_hnl_hpp__

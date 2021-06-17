@@ -3,7 +3,7 @@
 // nothing to do here
 
 #else // EXPOSE_PHYSICS_VECTORS
-#include "dkgen/core/vectors.hpp"
+#include "GELATO/core/vectors.hpp"
 
 // need to define USING_CLHEP or USING_ROOT or USING_XXXXX (tbd) on the compile command line
 
@@ -45,7 +45,7 @@ using ROTATION_CLASS = TRotation;
 
 
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     struct vector3::_vector3_impl_ : public VECTOR3_CLASS {
       public:
@@ -70,14 +70,14 @@ namespace dkgen {
 }
 
 
-dkgen::core::vector3::vector3() {
+GELATO::core::vector3::vector3() {
   static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
   static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
   new (&impl_storage) _vector3_impl_;
   impl = reinterpret_cast<_vector3_impl_*>(&impl_storage);
 }
 
-dkgen::core::vector3::vector3(double x, double y, double z)  {
+GELATO::core::vector3::vector3(double x, double y, double z)  {
   static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
   static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
   new (&impl_storage) _vector3_impl_ ;
@@ -85,18 +85,18 @@ dkgen::core::vector3::vector3(double x, double y, double z)  {
   set_xyz(x,y,z);
 }
 
-dkgen::core::vector3::~vector3() {
+GELATO::core::vector3::~vector3() {
   impl->~_vector3_impl_();
 }
 
-dkgen::core::vector3::vector3(const vector3& v)  {
+GELATO::core::vector3::vector3(const vector3& v)  {
   static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
   static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
   new (&impl_storage) _vector3_impl_(*(v.impl));
   impl = reinterpret_cast<_vector3_impl_*>(&impl_storage);
 }
 
-dkgen::core::vector3& dkgen::core::vector3::operator=(const vector3& v) {
+GELATO::core::vector3& GELATO::core::vector3::operator=(const vector3& v) {
   *impl = *v.impl;
   return *this;
 }
@@ -104,21 +104,21 @@ dkgen::core::vector3& dkgen::core::vector3::operator=(const vector3& v) {
 /* No need for move semantics (all data stored locally in impl_storage)
 
 // local storage, just copy
-dkgen::core::vector3::vector3(vector3&& v) {
+GELATO::core::vector3::vector3(vector3&& v) {
   static_assert(sizeof(_vector3_impl_) <= c_impl_size, "Size of vector3 implementation too big");
   static_assert(alignof(_vector3_impl_) == c_impl_alignment, "Wrong alignment of vector3 implementation");
   new (&impl_storage) _vector3_impl_(*(v.impl)) ;
   impl = reinterpret_cast<_vector3_impl_*>(&impl_storage);
 }
 // local storage, just copy
-dkgen::core::vector3& dkgen::core::vector3::operator=(vector3&& v) {
+GELATO::core::vector3& GELATO::core::vector3::operator=(vector3&& v) {
   *impl = *v.impl;
   return *this;
 }
 
 */
 
-dkgen::core::vector3 dkgen::core::vector3::unit() const {
+GELATO::core::vector3 GELATO::core::vector3::unit() const {
   /*
   if(mag() <= 0.) {
     throw std::runtime_error("vector3: unit() requested for zero or negative length vector");
@@ -129,19 +129,19 @@ dkgen::core::vector3 dkgen::core::vector3::unit() const {
   return ret;
 }
 
-dkgen::core::vector3 dkgen::core::vector3::operator*(double a) const {
+GELATO::core::vector3 GELATO::core::vector3::operator*(double a) const {
   vector3 ret(*this);
   ret.set_mag(ret.mag()*a);
   return ret;
 }
 
 /*
-dkgen::core::vector3 operator*(double a, const dkgen::core::vector3& b) {
+GELATO::core::vector3 operator*(double a, const GELATO::core::vector3& b) {
   return b*a;
 }
 */
 
-double dkgen::core::vector3::mag() const {
+double GELATO::core::vector3::mag() const {
 #ifdef USING_CLHEP
   return impl->mag();
 #elif defined(USING_ROOT)
@@ -149,7 +149,7 @@ double dkgen::core::vector3::mag() const {
 #endif
 }
 
-dkgen::core::vector3& dkgen::core::vector3::set_mag(double m) {
+GELATO::core::vector3& GELATO::core::vector3::set_mag(double m) {
 #ifdef USING_CLHEP
   impl->setMag(m);
 #elif defined(USING_ROOT)
@@ -158,7 +158,7 @@ dkgen::core::vector3& dkgen::core::vector3::set_mag(double m) {
   return *this;
 }
 
-dkgen::core::vector3& dkgen::core::vector3::set_xyz(double x, double y, double z) {
+GELATO::core::vector3& GELATO::core::vector3::set_xyz(double x, double y, double z) {
 #ifdef USING_CLHEP
   impl->set(x,y,z);
 #elif defined(USING_ROOT)
@@ -167,7 +167,7 @@ dkgen::core::vector3& dkgen::core::vector3::set_xyz(double x, double y, double z
   return *this;
 }
 
-double dkgen::core::vector3::x() const {
+double GELATO::core::vector3::x() const {
 #ifdef USING_CLHEP
   return impl->x();
 #elif defined USING_ROOT
@@ -175,7 +175,7 @@ double dkgen::core::vector3::x() const {
 #endif
 }
 
-double dkgen::core::vector3::y() const {
+double GELATO::core::vector3::y() const {
 #ifdef USING_CLHEP
   return impl->y();
 #elif defined USING_ROOT
@@ -183,7 +183,7 @@ double dkgen::core::vector3::y() const {
 #endif
 }
 
-double dkgen::core::vector3::z() const {
+double GELATO::core::vector3::z() const {
 #ifdef USING_CLHEP
   return impl->z();
 #elif defined USING_ROOT
@@ -191,25 +191,25 @@ double dkgen::core::vector3::z() const {
 #endif
 }
 
-dkgen::core::vector3 dkgen::core::vector3::operator-() const {
+GELATO::core::vector3 GELATO::core::vector3::operator-() const {
   vector3 ret(*this);
   *ret.impl = -*ret.impl;
   return ret;
 }
 
-dkgen::core::vector3 dkgen::core::vector3::operator-(const vector3& v2) const {
+GELATO::core::vector3 GELATO::core::vector3::operator-(const vector3& v2) const {
   vector3 ret(*this);
   *ret.impl -= *v2.impl;
   return ret;
 }
 
-dkgen::core::vector3 dkgen::core::vector3::operator+(const vector3& v2) const {
+GELATO::core::vector3 GELATO::core::vector3::operator+(const vector3& v2) const {
   vector3 ret(*this);
   *ret.impl += *v2.impl;
   return ret;
 }
 
-double dkgen::core::vector3::dot(const vector3& v) const {
+double GELATO::core::vector3::dot(const vector3& v) const {
 #ifdef USING_CLHEP
   return impl->dot(*v.impl);
 #elif defined USING_ROOT
@@ -217,7 +217,7 @@ double dkgen::core::vector3::dot(const vector3& v) const {
 #endif
 }
 
-double dkgen::core::vector3::delta_phi(const vector3& v) const {
+double GELATO::core::vector3::delta_phi(const vector3& v) const {
 #ifdef USING_CLHEP
   return impl->deltaPhi(*v.impl);
 #elif defined USING_ROOT
@@ -232,14 +232,14 @@ double dkgen::core::vector3::delta_phi(const vector3& v) const {
 
 
 
-dkgen::core::fourvector::fourvector() {
+GELATO::core::fourvector::fourvector() {
   static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
   static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
   new (&impl_storage) _fourvector_impl_;
   impl = reinterpret_cast<_fourvector_impl_*>(&impl_storage);
 }
 
-dkgen::core::fourvector::fourvector(double x, double y, double z, double t) {
+GELATO::core::fourvector::fourvector(double x, double y, double z, double t) {
   static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
   static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
   new (&impl_storage) _fourvector_impl_;
@@ -247,18 +247,18 @@ dkgen::core::fourvector::fourvector(double x, double y, double z, double t) {
   set_xyzt(x,y,z,t);
 }
 
-dkgen::core::fourvector::~fourvector() {
+GELATO::core::fourvector::~fourvector() {
   impl->~_fourvector_impl_();
 }
 
-dkgen::core::fourvector::fourvector(const fourvector& v) {
+GELATO::core::fourvector::fourvector(const fourvector& v) {
   static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
   static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
   new (&impl_storage) _fourvector_impl_(*(v.impl));
   impl = reinterpret_cast<_fourvector_impl_*>(&impl_storage);
 }
 
-dkgen::core::fourvector& dkgen::core::fourvector::operator=(const fourvector& v) {
+GELATO::core::fourvector& GELATO::core::fourvector::operator=(const fourvector& v) {
   *impl = *v.impl;
   return *this;
 }
@@ -266,20 +266,20 @@ dkgen::core::fourvector& dkgen::core::fourvector::operator=(const fourvector& v)
 /* No need for move semantics (all data stored locally in impl_storage)
 
 // local storage, just copy
-dkgen::core::fourvector::fourvector(fourvector&& v) {
+GELATO::core::fourvector::fourvector(fourvector&& v) {
   static_assert(sizeof(_fourvector_impl_) <= c_impl_size, "Size of fourvector implementation too big");
   static_assert(alignof(_fourvector_impl_) == c_impl_alignment, "Wrong alignment of fourvector implementation");
   new (&impl_storage) _fourvector_impl_(*(v.impl));
   impl = reinterpret_cast<_fourvector_impl_*>(&impl_storage);
 }
 
-dkgen::core::fourvector& dkgen::core::fourvector::operator=(fourvector&& v) {
+GELATO::core::fourvector& GELATO::core::fourvector::operator=(fourvector&& v) {
   *impl = *v.impl;
   return *this;
 }
 */
 
-dkgen::core::fourvector& dkgen::core::fourvector::set_xyzt(double x, double y, double z, double t) {
+GELATO::core::fourvector& GELATO::core::fourvector::set_xyzt(double x, double y, double z, double t) {
 #ifdef USING_CLHEP
   impl->set(x,y,z,t);
 #elif defined USING_ROOT
@@ -288,7 +288,7 @@ dkgen::core::fourvector& dkgen::core::fourvector::set_xyzt(double x, double y, d
   return *this;
 }
 
-dkgen::core::fourvector& dkgen::core::fourvector::set_t(double t) {
+GELATO::core::fourvector& GELATO::core::fourvector::set_t(double t) {
 #ifdef USING_CLHEP
   impl->setT(t);
 #elif defined USING_ROOT
@@ -297,7 +297,7 @@ dkgen::core::fourvector& dkgen::core::fourvector::set_t(double t) {
   return *this;
 }
 
-double dkgen::core::fourvector::x() const {
+double GELATO::core::fourvector::x() const {
 #ifdef USING_CLHEP
   return impl->x();
 #elif defined USING_ROOT
@@ -305,7 +305,7 @@ double dkgen::core::fourvector::x() const {
 #endif
 }
 
-double dkgen::core::fourvector::y() const {
+double GELATO::core::fourvector::y() const {
 #ifdef USING_CLHEP
   return impl->y();
 #elif defined USING_ROOT
@@ -313,7 +313,7 @@ double dkgen::core::fourvector::y() const {
 #endif
 }
 
-double dkgen::core::fourvector::z() const {
+double GELATO::core::fourvector::z() const {
 #ifdef USING_CLHEP
   return impl->z();
 #elif defined USING_ROOT
@@ -321,7 +321,7 @@ double dkgen::core::fourvector::z() const {
 #endif
 }
 
-double dkgen::core::fourvector::t() const {
+double GELATO::core::fourvector::t() const {
 #ifdef USING_CLHEP
   return impl->t();
 #elif defined USING_ROOT
@@ -329,7 +329,7 @@ double dkgen::core::fourvector::t() const {
 #endif
 }
 
-double dkgen::core::fourvector::px() const {
+double GELATO::core::fourvector::px() const {
 #ifdef USING_CLHEP
   return impl->px();
 #elif defined USING_ROOT
@@ -337,7 +337,7 @@ double dkgen::core::fourvector::px() const {
 #endif
 }
 
-double dkgen::core::fourvector::py() const {
+double GELATO::core::fourvector::py() const {
 #ifdef USING_CLHEP
   return impl->py();
 #elif defined USING_ROOT
@@ -345,7 +345,7 @@ double dkgen::core::fourvector::py() const {
 #endif
 }
 
-double dkgen::core::fourvector::pz() const {
+double GELATO::core::fourvector::pz() const {
 #ifdef USING_CLHEP
   return impl->pz();
 #elif defined USING_ROOT
@@ -353,7 +353,7 @@ double dkgen::core::fourvector::pz() const {
 #endif
 }
 
-double dkgen::core::fourvector::e() const {
+double GELATO::core::fourvector::e() const {
 #ifdef USING_CLHEP
   return impl->e();
 #elif defined USING_ROOT
@@ -361,7 +361,7 @@ double dkgen::core::fourvector::e() const {
 #endif
 }
 
-dkgen::core::fourvector& dkgen::core::fourvector::set_mass_momentum_theta_phi(double m, double mom, double t, double p) {
+GELATO::core::fourvector& GELATO::core::fourvector::set_mass_momentum_theta_phi(double m, double mom, double t, double p) {
 #ifdef USING_CLHEP
   impl->setVectM({mom*std::sin(t)*std::cos(p), mom*std::sin(t)*std::sin(p), mom*std::cos(t)},m);
 #elif defined USING_ROOT
@@ -370,7 +370,7 @@ dkgen::core::fourvector& dkgen::core::fourvector::set_mass_momentum_theta_phi(do
   return *this;
 }
 
-double dkgen::core::fourvector::m() const {
+double GELATO::core::fourvector::m() const {
 #ifdef USING_CLHEP
   return impl->m();
 #elif defined USING_ROOT
@@ -378,7 +378,7 @@ double dkgen::core::fourvector::m() const {
 #endif
 }
 
-double dkgen::core::fourvector::m2() const {
+double GELATO::core::fourvector::m2() const {
 #ifdef USING_CLHEP
   return impl->m2();
 #elif defined USING_ROOT
@@ -386,7 +386,7 @@ double dkgen::core::fourvector::m2() const {
 #endif
 }
 
-dkgen::core::vector3 dkgen::core::fourvector::vect() const {
+GELATO::core::vector3 GELATO::core::fourvector::vect() const {
   vector3 ret;
 #ifdef USING_CLHEP
   *ret.impl = impl->vect();
@@ -396,7 +396,7 @@ dkgen::core::vector3 dkgen::core::fourvector::vect() const {
   return ret;
 }
 
-dkgen::core::fourvector& dkgen::core::fourvector::set_vec_time(const vector3& vec, double time)  {
+GELATO::core::fourvector& GELATO::core::fourvector::set_vec_time(const vector3& vec, double time)  {
 #ifdef USING_CLHEP
   impl->setVect(*vec.impl);
   impl->setT(time);
@@ -408,7 +408,7 @@ dkgen::core::fourvector& dkgen::core::fourvector::set_vec_time(const vector3& ve
 }
 
 
-dkgen::core::vector3 dkgen::core::fourvector::get_boost_vector() const {
+GELATO::core::vector3 GELATO::core::fourvector::get_boost_vector() const {
   vector3 ret;
 #ifdef USING_CLHEP
   *ret.impl = impl->boostVector();
@@ -418,7 +418,7 @@ dkgen::core::vector3 dkgen::core::fourvector::get_boost_vector() const {
   return ret;
 }
 
-dkgen::core::fourvector& dkgen::core::fourvector::boost(const vector3& bv) {
+GELATO::core::fourvector& GELATO::core::fourvector::boost(const vector3& bv) {
 #ifdef USING_CLHEP
   impl->boost(*bv.impl);
 #elif defined USING_ROOT
@@ -427,7 +427,7 @@ dkgen::core::fourvector& dkgen::core::fourvector::boost(const vector3& bv) {
   return *this;
 }
 
-double dkgen::core::fourvector::beta() const {
+double GELATO::core::fourvector::beta() const {
 #ifdef USING_CLHEP
   return impl->beta();
 #elif defined USING_ROOT
@@ -436,13 +436,13 @@ double dkgen::core::fourvector::beta() const {
 }
 
 
-dkgen::core::fourvector dkgen::core::fourvector::operator-(const fourvector& v2) const {
+GELATO::core::fourvector GELATO::core::fourvector::operator-(const fourvector& v2) const {
   fourvector ret(*this);
   *ret.impl -= *v2.impl;
   return ret;
 }
 
-dkgen::core::fourvector dkgen::core::fourvector::operator+(const fourvector& v2) const {
+GELATO::core::fourvector GELATO::core::fourvector::operator+(const fourvector& v2) const {
   fourvector ret(*this);
   *ret.impl += *v2.impl;
   return ret;
@@ -458,25 +458,25 @@ dkgen::core::fourvector dkgen::core::fourvector::operator+(const fourvector& v2)
 
 
 
-dkgen::core::rotation::rotation() {
+GELATO::core::rotation::rotation() {
   static_assert(sizeof(_rotation_impl_) <= c_impl_size, "Size of rotation implementation too big");
   static_assert(alignof(_rotation_impl_) == c_impl_alignment, "Wrong alignment of rotation implementation");
   new (&impl_storage) _rotation_impl_;
   impl = reinterpret_cast<_rotation_impl_*>(&impl_storage);
 }
 
-dkgen::core::rotation::~rotation() {
+GELATO::core::rotation::~rotation() {
   impl->~_rotation_impl_();
 }
 
-dkgen::core::rotation::rotation(const dkgen::core::rotation& r) {
+GELATO::core::rotation::rotation(const GELATO::core::rotation& r) {
   static_assert(sizeof(_rotation_impl_) <= c_impl_size, "Size of rotation implementation too big");
   static_assert(alignof(_rotation_impl_) == c_impl_alignment, "Wrong alignment of rotation implementation");
   new (&impl_storage) _rotation_impl_(*(r.impl));
   impl = reinterpret_cast<_rotation_impl_*>(&impl_storage);
 }
 
-dkgen::core::rotation& dkgen::core::rotation::operator=(const rotation& r) {
+GELATO::core::rotation& GELATO::core::rotation::operator=(const rotation& r) {
   *impl = *r.impl;
   return *this;
 }
@@ -484,7 +484,7 @@ dkgen::core::rotation& dkgen::core::rotation::operator=(const rotation& r) {
 /* No need for move semantics (all data stored locally in impl_storage)
 
 // local storage, just copy
-dkgen::core::rotation::rotation(dkgen::core::rotation&& r) {
+GELATO::core::rotation::rotation(GELATO::core::rotation&& r) {
   static_assert(sizeof(_rotation_impl_) <= c_impl_size, "Size of rotation implementation too big");
   static_assert(alignof(_rotation_impl_) == c_impl_alignment, "Wrong alignment of rotation implementation");
   new (&impl_storage) _rotation_impl_(*(r.impl));
@@ -492,19 +492,19 @@ dkgen::core::rotation::rotation(dkgen::core::rotation&& r) {
 }
 
 // local storage, just copy
-dkgen::core::rotation& dkgen::core::rotation::operator=(rotation&& r) {
+GELATO::core::rotation& GELATO::core::rotation::operator=(rotation&& r) {
   *impl = *r.impl;
   return *this;
 }
 */
 
-dkgen::core::vector3 dkgen::core::rotation::operator*(const vector3& vin) const {
-  dkgen::core::vector3 ret;
+GELATO::core::vector3 GELATO::core::rotation::operator*(const vector3& vin) const {
+  GELATO::core::vector3 ret;
   *ret.impl = *impl * *vin.impl;
   return ret;
 }
 
-dkgen::core::rotation& dkgen::core::rotation::invert() { 
+GELATO::core::rotation& GELATO::core::rotation::invert() { 
 #ifdef USING_CLHEP
   impl->invert();
 #elif defined USING_ROOT
@@ -513,7 +513,7 @@ dkgen::core::rotation& dkgen::core::rotation::invert() {
   return *this;
 }
 
-dkgen::core::rotation dkgen::core::rotation::get_inverse()  const { 
+GELATO::core::rotation GELATO::core::rotation::get_inverse()  const { 
   rotation ret;
 #ifdef USING_CLHEP
   *ret.impl = impl->inverse();
@@ -523,7 +523,7 @@ dkgen::core::rotation dkgen::core::rotation::get_inverse()  const {
   return ret;
 }
 
-dkgen::core::rotation& dkgen::core::rotation::rotate_axes(const vector3& new_x, const vector3& new_y, const vector3& new_z) {
+GELATO::core::rotation& GELATO::core::rotation::rotate_axes(const vector3& new_x, const vector3& new_y, const vector3& new_z) {
 #ifdef USING_CLHEP
   impl->rotateAxes(*new_x.impl, *new_y.impl, *new_z.impl);
 #elif defined USING_ROOT

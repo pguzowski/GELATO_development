@@ -1,6 +1,6 @@
-#include "dkgen/core/driver.hpp"
-#include "dkgen/core/particle.hpp"
-#include "dkgen/core/decaying_particle_info.hpp"
+#include "GELATO/core/driver.hpp"
+#include "GELATO/core/particle.hpp"
+#include "GELATO/core/decaying_particle_info.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -40,25 +40,25 @@ int main(int argc, char** argv) {
     }
   }
 
-  dkgen::core::driver driver;
+  GELATO::core::driver driver;
 
-  dkgen::core::geometry geo({0,1e4,1.e4},{1e3,1e3,1e3});
+  GELATO::core::geometry geo({0,1e4,1.e4},{1e3,1e3,1e3});
   driver.set_geometry(geo);
-  dkgen::core::config conf;
-  conf.fix_system_of_units(dkgen::core::config::system_of_units::GeV_cm_ns);
+  GELATO::core::config conf;
+  conf.fix_system_of_units(GELATO::core::config::system_of_units::GeV_cm_ns);
   conf.set_force_decays_in_detector(true);
   driver.set_config(conf);
 
   // add 1 -> 2 + 3
   driver.add_particle_definition(
-      dkgen::core::particle_definition{1,100.,1e3}
+      GELATO::core::particle_definition{1,100.,1e3}
       .add_decay({1.,{{-2,false},{-3,false}}})
       .finalise_decay_table()
       );
   
   // add 2 -> 11 + -11
   driver.add_particle_definition(
-      dkgen::core::particle_definition{-2,80.,.4e3}
+      GELATO::core::particle_definition{-2,80.,.4e3}
       .add_decay({1.,{{11,true},{-11,true}}})
       .finalise_decay_table()
       );
@@ -67,24 +67,24 @@ int main(int argc, char** argv) {
   // add 3 -> 11 + 13 + (-13), with optional reweighter
   if(to_reweight) {
     // toy reweighter
-    dkgen::core::threebody_dalitz_function rw{[](
-        dkgen::core::threebody_dalitz_function::reduced_inv_mass_1_2_squared m12,
-        dkgen::core::threebody_dalitz_function::reduced_inv_mass_1_3_squared m13
+    GELATO::core::threebody_dalitz_function rw{[](
+        GELATO::core::threebody_dalitz_function::reduced_inv_mass_1_2_squared m12,
+        GELATO::core::threebody_dalitz_function::reduced_inv_mass_1_3_squared m13
         ) -> double {
       return 1.-std::abs((m12-m13)/(m12+m13)); // maximise symmetric invariant masses
     }};
     
     driver.add_particle_definition(
-        dkgen::core::particle_definition{3,15.,.2e3}
+        GELATO::core::particle_definition{3,15.,.2e3}
         .add_decay(
-          dkgen::core::decay_mode{1.,{{13,true},{-13,true},{11,true}}}.set_threebody_dalitz_reweighter(rw)
+          GELATO::core::decay_mode{1.,{{13,true},{-13,true},{11,true}}}.set_threebody_dalitz_reweighter(rw)
           )
         .finalise_decay_table()
         );
   }
   else {
     driver.add_particle_definition(
-        dkgen::core::particle_definition{3,15.,.2e3}
+        GELATO::core::particle_definition{3,15.,.2e3}
         .add_decay({1.,{{13,true},{-13,true},{-11,true}}}) // no reweight
         .finalise_decay_table()
         );

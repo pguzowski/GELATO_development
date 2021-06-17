@@ -1,11 +1,11 @@
-#ifndef __dkgen_core_ordered_list_of_vectors_hpp__
-#define __dkgen_core_ordered_list_of_vectors_hpp__
+#ifndef __GELATO_core_ordered_list_of_vectors_hpp__
+#define __GELATO_core_ordered_list_of_vectors_hpp__
 
-#include "dkgen/core/vectors.hpp"
+#include "GELATO/core/vectors.hpp"
 
 #include <vector>
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     class ordered_list_of_vectors {
       public:

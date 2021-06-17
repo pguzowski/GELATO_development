@@ -1,9 +1,9 @@
-#ifndef __dkgen_core_geometry_hpp__
-#define __dkgen_core_geometry_hpp__
+#ifndef __GELATO_core_geometry_hpp__
+#define __GELATO_core_geometry_hpp__
 
-#include "dkgen/core/ordered_list_of_vectors.hpp"
+#include "GELATO/core/ordered_list_of_vectors.hpp"
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     class geometry {
       public:

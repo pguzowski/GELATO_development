@@ -1,10 +1,10 @@
-#ifndef __dkgen_physics_heavy_neutral_leptons_hpp__
-#define __dkgen_physics_heavy_neutral_leptons_hpp__
+#ifndef __GELATO_physics_heavy_neutral_leptons_hpp__
+#define __GELATO_physics_heavy_neutral_leptons_hpp__
 
-#include "dkgen/physics/detail/hnl.hpp"
+#include "GELATO/physics/detail/hnl.hpp"
 
-#include "dkgen/core/driver.hpp"
-#include "dkgen/core/particle.hpp"
+#include "GELATO/core/driver.hpp"
+#include "GELATO/core/particle.hpp"
 
 /*
  *
@@ -13,7 +13,7 @@
  */
 
 
-namespace dkgen {
+namespace GELATO {
   namespace physics {
     namespace heavy_neutral_leptons {
 
@@ -70,9 +70,9 @@ namespace dkgen {
       //    (set to 'false' if you want to for example calculate branching ratios
       //       for various mass points in a loop)
 
-      inline dkgen::core::driver::particle_map create_particle_content(
+      inline GELATO::core::driver::particle_map create_particle_content(
           const model_parameters& params,
-          const dkgen::core::config& conf,
+          const GELATO::core::config& conf,
           // all "visible" final states
           const std::vector<decay_modes>& decay_modes_to_use = all_decay_modes,
           const std::vector<production_modes>& production_modes_to_use = all_production_modes,
@@ -87,28 +87,28 @@ namespace dkgen {
 
       // calculates total branching ratio of neutral kaon to the requested production modes of HNL, so that
       // weights can be applied to final event for given model parameters
-      inline double kaon_pm_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+      inline double kaon_pm_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
           const std::vector<production_modes>& production_modes_to_use) {
         return detail::hnl::kaon_pm_hnl_branching_ratio(params, conf, production_modes_to_use);
       }
 
       // calculates total branching ratio of neutral kaon to the requested production modes of HNL, so that
       // weights can be applied to final event for given model parameters
-      inline double kaon_0L_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+      inline double kaon_0L_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
           const std::vector<production_modes>& production_modes_to_use) {
         return detail::hnl::kaon_0L_hnl_branching_ratio(params, conf, production_modes_to_use);
       }
 
       // calculates total branching ratio of charged pion to the requested production modes of HNL, so that
       // weights can be applied to final event for given model parameters
-      inline double pion_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+      inline double pion_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
           const std::vector<production_modes>& production_modes_to_use) {
         return detail::hnl::pion_hnl_branching_ratio(params, conf, production_modes_to_use);
       }
 
       // calculates total branching ratio of pion to the requested decay production of HNL, so that
       // weights can be applied to final event for given model parameters
-      inline double muon_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+      inline double muon_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
           const std::vector<production_modes>& production_modes_to_use) {
         return detail::hnl::muon_hnl_branching_ratio(params, conf, production_modes_to_use);
       }

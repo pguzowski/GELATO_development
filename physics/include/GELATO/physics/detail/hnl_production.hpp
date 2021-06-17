@@ -1,11 +1,11 @@
-#ifndef __dkgen_physics_detail_hnl_production_hpp__
-#define __dkgen_physics_detail_hnl_production_hpp__
+#ifndef __GELATO_physics_detail_hnl_production_hpp__
+#define __GELATO_physics_detail_hnl_production_hpp__
 
-#include "dkgen/physics/detail/integration.hpp"
-#include "dkgen/physics/detail/utils.hpp"
-#include "dkgen/physics/detail/hnl_types.hpp"
+#include "GELATO/physics/detail/integration.hpp"
+#include "GELATO/physics/detail/utils.hpp"
+#include "GELATO/physics/detail/hnl_types.hpp"
 
-#include "dkgen/core/particle.hpp"
+#include "GELATO/core/particle.hpp"
 #include <cmath>
 #include <numeric>
 
@@ -14,7 +14,7 @@
 #include <iostream>
 #endif
 
-namespace dkgen {
+namespace GELATO {
   namespace physics {
     namespace detail {
       namespace hnl {
@@ -213,7 +213,7 @@ namespace dkgen {
 
         // calculates branching ratio of kaon to all possible modes of HNL, so that
         // weights can be applied to final event for given model parameters
-        double kaon_pm_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+        double kaon_pm_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
            const std::vector<production_modes>& production_modes_to_use) {
           auto const& decrates = get_kaon_pm_decay_widths(derived_params{params, conf}, production_modes_to_use);
           const double kaon_hnl_decay_rate = sum_decay_widths(decrates);
@@ -222,7 +222,7 @@ namespace dkgen {
           return kaon_hnl_decay_rate / total_kaon_decay_rate;
         }
 
-        dkgen::core::particle_definition make_kaon_definition(const derived_params& dparams,
+        GELATO::core::particle_definition make_kaon_definition(const derived_params& dparams,
             const std::vector<production_modes>& production_modes_to_use) {
           
           const double HNL_mass = dparams.raw_params.HNL_mass;
@@ -238,7 +238,7 @@ namespace dkgen {
           const double muon_mass    = dparams.muon_mass;
           const double kaon_pm_lt   = dparams.config.physical_params().find_particle("kaon_pm").lifetime;
           
-          dkgen::core::particle_definition charged_kaon{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt};
+          GELATO::core::particle_definition charged_kaon{kaon_pm_pdg,kaon_pm_mass,kaon_pm_lt};
           
           auto kaon_pm_decay_widths = get_kaon_pm_decay_widths(dparams, production_modes_to_use);
           const double total_kaon_decay_rate = sum_decay_widths(kaon_pm_decay_widths);
@@ -374,7 +374,7 @@ namespace dkgen {
 
         // calculates branching ratio of kaon_0L to all possible modes of HNL, so that
         // weights can be applied to final event for given model parameters
-        double kaon_0L_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+        double kaon_0L_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
            const std::vector<production_modes>& production_modes_to_use) {
           auto const& decrates = get_kaon_0L_decay_widths(derived_params{params, conf}, production_modes_to_use);
           const double kaon_hnl_decay_rate = sum_decay_widths(decrates);
@@ -383,7 +383,7 @@ namespace dkgen {
           return kaon_hnl_decay_rate / total_kaon_decay_rate;
         }
 
-        dkgen::core::particle_definition make_K0L_definition(const derived_params& dparams, 
+        GELATO::core::particle_definition make_K0L_definition(const derived_params& dparams, 
             const std::vector<production_modes>& production_modes_to_use) {
 
           const double HNL_mass = dparams.raw_params.HNL_mass;
@@ -399,7 +399,7 @@ namespace dkgen {
           const double muon_mass    = dparams.muon_mass;
           const double kaon_0L_lt   = dparams.config.physical_params().find_particle("kaon_0L").lifetime;
           
-          dkgen::core::particle_definition neutral_kaon{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt};
+          GELATO::core::particle_definition neutral_kaon{kaon_0L_pdg,kaon_0L_mass,kaon_0L_lt};
           
           auto kaon_0L_decay_widths = get_kaon_0L_decay_widths(dparams, production_modes_to_use);
           const double total_k0_decay_rate = sum_decay_widths(kaon_0L_decay_widths);
@@ -523,7 +523,7 @@ namespace dkgen {
 
         // calculates branching ratio of pion to all possible modes of HNL, so that
         // weights can be applied to final event for given model parameters
-        double pion_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+        double pion_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
            const std::vector<production_modes>& production_modes_to_use) {
           auto const& decrates = get_pion_decay_widths(derived_params{params, conf}, production_modes_to_use);
           const double pion_hnl_decay_rate = sum_decay_widths(decrates);
@@ -532,7 +532,7 @@ namespace dkgen {
           return pion_hnl_decay_rate / total_pion_decay_rate;
         }
 
-        dkgen::core::particle_definition make_pion_definition(const derived_params& dparams,
+        GELATO::core::particle_definition make_pion_definition(const derived_params& dparams,
           const std::vector<production_modes>& production_modes_to_use) {
 
           const double HNL_mass = dparams.raw_params.HNL_mass;
@@ -546,7 +546,7 @@ namespace dkgen {
           const double muon_mass    = dparams.muon_mass;
           const double pion_pm_lt      = dparams.config.physical_params().find_particle("pion_pm").lifetime;
           
-          dkgen::core::particle_definition charged_pion{pion_pm_pdg,pion_pm_mass,pion_pm_lt};
+          GELATO::core::particle_definition charged_pion{pion_pm_pdg,pion_pm_mass,pion_pm_lt};
           
           auto pion_pm_decay_widths = get_pion_decay_widths(dparams, production_modes_to_use);
           const double total_pion_decay_rate = sum_decay_widths(pion_pm_decay_widths);
@@ -671,7 +671,7 @@ namespace dkgen {
 
         // calculates branching ratio of pion to all possible modes of HNL, so that
         // weights can be applied to final event for given model parameters
-        double muon_hnl_branching_ratio(const model_parameters& params, const dkgen::core::config& conf,
+        double muon_hnl_branching_ratio(const model_parameters& params, const GELATO::core::config& conf,
            const std::vector<production_modes>& production_modes_to_use) {
           auto const& decrates = get_muon_decay_widths(derived_params{params, conf}, production_modes_to_use);
           const double muon_hnl_decay_rate = sum_decay_widths(decrates);
@@ -681,7 +681,7 @@ namespace dkgen {
         }
 
 
-        dkgen::core::particle_definition make_muon_definition(const derived_params& dparams,
+        GELATO::core::particle_definition make_muon_definition(const derived_params& dparams,
             const std::vector<production_modes>& production_modes_to_use) {
 
           const double HNL_mass = dparams.raw_params.HNL_mass;
@@ -694,7 +694,7 @@ namespace dkgen {
           const double muon_mass    = dparams.muon_mass;
           const double muon_lt      = dparams.config.physical_params().find_particle("muon").lifetime;
           
-          dkgen::core::particle_definition muon_def{muon_pdg,muon_mass,muon_lt};
+          GELATO::core::particle_definition muon_def{muon_pdg,muon_mass,muon_lt};
 
           auto muon_decay_widths = get_muon_decay_widths(dparams, production_modes_to_use);
           const double total_muon_decay_rate = sum_decay_widths(muon_decay_widths);
@@ -762,4 +762,4 @@ namespace dkgen {
 
 #undef DEBUG
 
-#endif // __dkgen_physics_detail_hnl_production_hpp__
+#endif // __GELATO_physics_detail_hnl_production_hpp__

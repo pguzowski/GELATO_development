@@ -1,4 +1,4 @@
-#include "dkgen/core/config.hpp"
+#include "GELATO/core/config.hpp"
 
 #include <stdexcept>
 
@@ -6,7 +6,7 @@
 #include <TDatabasePDG.h>
 #endif
 
-dkgen::core::config& dkgen::core::config::fix_system_of_units(system_of_units sys) {
+GELATO::core::config& GELATO::core::config::fix_system_of_units(system_of_units sys) {
   switch(sys) {
     case system_of_units::GeV_cm_ns:
       pparams.speed_of_light = 29.9791932;
@@ -38,8 +38,8 @@ dkgen::core::config& dkgen::core::config::fix_system_of_units(system_of_units sy
   return *this;
 }
 
-const dkgen::core::config::standard_particle&
-dkgen::core::config::physical_parameters::find_particle(const std::string& name) const {
+const GELATO::core::config::standard_particle&
+GELATO::core::config::physical_parameters::find_particle(const std::string& name) const {
   auto p = particles.find(name);
   if(p == particles.end()) {
     throw std::runtime_error("Error! "+name+" not found in list of particles");

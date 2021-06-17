@@ -1,5 +1,5 @@
-#include "dkgen/core/driver.hpp"
-#include "dkgen/core/decaying_particle_info.hpp"
+#include "GELATO/core/driver.hpp"
+#include "GELATO/core/decaying_particle_info.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -14,7 +14,7 @@
 
 
 //#include "../../development_misc/arXiv_1905_00284.hpp"
-#include "dkgen/physics/heavy_neutral_leptons.hpp"
+#include "GELATO/physics/heavy_neutral_leptons.hpp"
 /*
  * Generates a decay table for a Heavy Neutral Lepton model,
  * based on arXiv:1905.00284, including 2-body and 3-body reweighters
@@ -176,10 +176,10 @@ int main(int argc, char** argv) {
   }
 
 
-  dkgen::core::driver driver;
+  GELATO::core::driver driver;
 
-  dkgen::core::config conf;
-  conf.fix_system_of_units(dkgen::core::config::system_of_units::GeV_cm_ns);
+  GELATO::core::config conf;
+  conf.fix_system_of_units(GELATO::core::config::system_of_units::GeV_cm_ns);
   conf.set_force_decays_in_detector(force);
   driver.set_config(conf);
   
@@ -187,8 +187,8 @@ int main(int argc, char** argv) {
   /*
    *                NUMI 
    */
-  dkgen::core::geometry geo({31387.58422, 3316.402543, 60100.2414},{1.25e2,1.25e2,5e2},
-    dkgen::core::rotation{}.rotate_axes({  0.92103853804025681562,    0.022713504803924120662,  0.38880857519374290021  }, 
+  GELATO::core::geometry geo({31387.58422, 3316.402543, 60100.2414},{1.25e2,1.25e2,5e2},
+    GELATO::core::rotation{}.rotate_axes({  0.92103853804025681562,    0.022713504803924120662,  0.38880857519374290021  }, 
                                         {  4.6254001262154668408e-05, 0.99829162468141474651,  -0.058427989452906302359 }, 
                                         { -0.38947144863934973769,    0.053832413938664107345,  0.91946400794392302291  }));
   driver.set_geometry(geo);
@@ -197,11 +197,11 @@ int main(int argc, char** argv) {
   /*
    *                BNB
    */
-  dkgen::core::geometry geo({0., 0., 475e2}, {1.25e2, 1.25e2, 5e2});
+  GELATO::core::geometry geo({0., 0., 475e2}, {1.25e2, 1.25e2, 5e2});
   driver.set_geometry(geo);
   }
   else if(geo_type == "sbnd") {
-  dkgen::core::geometry geo({-74., 0., 110e2}, {2e2, 2e2, 2.5e2}); // sbnd is not directly on-axis, but offset by ~0.75m in x
+  GELATO::core::geometry geo({-74., 0., 110e2}, {2e2, 2e2, 2.5e2}); // sbnd is not directly on-axis, but offset by ~0.75m in x
   driver.set_geometry(geo);
   }
   
@@ -220,8 +220,8 @@ int main(int argc, char** argv) {
       return s.str();}()
   };
   
-  namespace hnl = dkgen::physics::heavy_neutral_leptons;
-  //namespace hnl = dkgen::physics::arXiv_1905_00284;
+  namespace hnl = GELATO::physics::heavy_neutral_leptons;
+  //namespace hnl = GELATO::physics::arXiv_1905_00284;
 
   if(false) {
 
@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
     const double pion_br = hnl::pion_hnl_branching_ratio(params, conf, prod_modes);
     const double muon_br = hnl::muon_hnl_branching_ratio(params, conf, prod_modes);
 
-    std::vector<dkgen::core::particle_info> input_flux;
+    std::vector<GELATO::core::particle_info> input_flux;
     if(fluxfn.empty()) {
       auto& kaon = conf.physical_params().find_particle("kaon_pm");
       const int kpdg = -kaon.pdgcode;

@@ -1,13 +1,13 @@
-#include "dkgen/core/particle_history.hpp"
+#include "GELATO/core/particle_history.hpp"
 
 #include <cstdio> // for std::snprintf
 #include <functional>
 #include <algorithm>
 
-#include "dkgen/core/decaying_particle_info.hpp"
+#include "GELATO/core/decaying_particle_info.hpp"
 
 
-dkgen::core::particle_history& dkgen::core::particle_history::build_hierarchy(std::unique_ptr<decaying_particle_info>&& p) {
+GELATO::core::particle_history& GELATO::core::particle_history::build_hierarchy(std::unique_ptr<decaying_particle_info>&& p) {
   // first make sure p is not a descendent of current parent,
   // otherwise it will be deleted when current parent is reassigned and destructed
   decaying_particle_info_ptr curr = p.get();
@@ -45,12 +45,12 @@ dkgen::core::particle_history& dkgen::core::particle_history::build_hierarchy(st
   return *this;
 }
 
-dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output() const {
+GELATO::core::hepevt_info GELATO::core::particle_history::build_hepevt_output() const {
   return build_hepevt_output_with_translation_followed_by_rotation(fourvector{},rotation{});
 }
 
 
-dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output_with_translation_followed_by_rotation(
+GELATO::core::hepevt_info GELATO::core::particle_history::build_hepevt_output_with_translation_followed_by_rotation(
     const fourvector& translation, const rotation& rot) const {
   if(hierarchy.empty()) {
     throw std::runtime_error("particle_history: tried to build hepevt output for empty hierarchy");
@@ -102,7 +102,7 @@ dkgen::core::hepevt_info dkgen::core::particle_history::build_hepevt_output_with
 
 }
 
-std::string dkgen::core::hepevt_info::build_text(const char* metadata) const {
+std::string GELATO::core::hepevt_info::build_text(const char* metadata) const {
   const size_t SIZEOF_BUFFER = 1000;
   char buffer[SIZEOF_BUFFER+1]; // +1 for extra terminating null character
   std::snprintf(buffer,SIZEOF_BUFFER,"%d %lu weight=%g %s\n",event_counter,particle_info.size(), total_weight, metadata);
@@ -120,4 +120,4 @@ std::string dkgen::core::hepevt_info::build_text(const char* metadata) const {
 }
 
 // initialize static member
-unsigned int dkgen::core::particle_history::event_counter = 0;
+unsigned int GELATO::core::particle_history::event_counter = 0;

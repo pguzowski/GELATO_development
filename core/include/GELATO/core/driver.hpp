@@ -1,14 +1,14 @@
-#ifndef __dkgen_core_driver_hpp__
-#define __dkgen_core_driver_hpp__
+#ifndef __GELATO_core_driver_hpp__
+#define __GELATO_core_driver_hpp__
 
-#include "dkgen/core/particle_history.hpp"
-#include "dkgen/core/random_number_generators.hpp"
-#include "dkgen/core/geometry.hpp"
-#include "dkgen/core/config.hpp"
+#include "GELATO/core/particle_history.hpp"
+#include "GELATO/core/random_number_generators.hpp"
+#include "GELATO/core/geometry.hpp"
+#include "GELATO/core/config.hpp"
 
 #include <map>
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     class particle_info;
     class particle_definition;
@@ -30,7 +30,7 @@ namespace dkgen {
         
         particle_map particle_content;
         geometry geo;
-        ::dkgen::core::config config;
+        ::GELATO::core::config config;
 
         // recursively generate decay positions, forcing some into the detector if
         // possible and "force_decays_inside_detector" config flag is on

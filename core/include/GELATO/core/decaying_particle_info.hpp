@@ -1,12 +1,12 @@
-#ifndef __dkgen_core_decaying_particle_info_hpp__
-#define __dkgen_core_decaying_particle_info_hpp__
+#ifndef __GELATO_core_decaying_particle_info_hpp__
+#define __GELATO_core_decaying_particle_info_hpp__
 
 #include <memory>
 #include <vector>
 
-#include "dkgen/core/vectors.hpp"
+#include "GELATO/core/vectors.hpp"
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     class particle_info {
       public:

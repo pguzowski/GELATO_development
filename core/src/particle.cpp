@@ -1,20 +1,20 @@
-#include "dkgen/core/particle.hpp"
+#include "GELATO/core/particle.hpp"
 
 #include <algorithm>
 #include <string>
 
-dkgen::core::decay_mode::decay_mode(double br, daughter_vector_t dgt) :
+GELATO::core::decay_mode::decay_mode(double br, daughter_vector_t dgt) :
   branching_ratio{br},
   daughters{std::move(dgt)},
   reweighting_type{reweighter_type::none}
 {
 }
 
-bool dkgen::core::decay_mode::is_pure_final_state() const {
+bool GELATO::core::decay_mode::is_pure_final_state() const {
   return std::all_of(daughters.begin(), daughters.end(),[](auto p){return p.second;});
 }
 
-dkgen::core::particle_definition::particle_definition(int pdgc, double m, double lt, bool scj) :
+GELATO::core::particle_definition::particle_definition(int pdgc, double m, double lt, bool scj) :
   pdg_code{pdgc},
   m{m},
   ltime{lt},
@@ -25,7 +25,7 @@ dkgen::core::particle_definition::particle_definition(int pdgc, double m, double
   }
 }
       
-dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(const decay_mode& dm) {
+GELATO::core::particle_definition& GELATO::core::particle_definition::add_decay(const decay_mode& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("particle_definition::add_decay(const&): Decay table has been finalised already!");
   }
@@ -35,7 +35,7 @@ dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(co
   decay_table.push_back(dm);
   return *this;
 }
-dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(decay_mode&& dm) {
+GELATO::core::particle_definition& GELATO::core::particle_definition::add_decay(decay_mode&& dm) {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("particle_definition::add_decay(&&):Decay table has been finalised already!");
   }
@@ -46,7 +46,7 @@ dkgen::core::particle_definition& dkgen::core::particle_definition::add_decay(de
   return *this;
 }
 
-dkgen::core::particle_definition& dkgen::core::particle_definition::finalise_decay_table() {
+GELATO::core::particle_definition& GELATO::core::particle_definition::finalise_decay_table() {
   if(sum_branching_ratios.size() > 0) {
     throw std::runtime_error("particle_definition::finalise_decay_table(): Decay table has been finalised already!");
   }
@@ -64,7 +64,7 @@ dkgen::core::particle_definition& dkgen::core::particle_definition::finalise_dec
   return *this;
 }
 
-const dkgen::core::decay_mode& dkgen::core::particle_definition::generate_decay_mode(random_uniform_0_1_generator rng) const {
+const GELATO::core::decay_mode& GELATO::core::particle_definition::generate_decay_mode(random_uniform_0_1_generator rng) const {
   if(decay_table.empty()) return null_decay;
   if(sum_branching_ratios.empty()) {
     throw std::runtime_error("Decay table has not been finalised");
@@ -86,8 +86,8 @@ const dkgen::core::decay_mode& dkgen::core::particle_definition::generate_decay_
 
 
 
-const dkgen::core::decay_mode&
-dkgen::core::particle_definition::generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const {
+const GELATO::core::decay_mode&
+GELATO::core::particle_definition::generate_weighted_decay_mode(random_uniform_0_1_generator rng, double& weight) const {
   if(decay_table.empty()) {
     weight = 1.;
     return null_decay;
@@ -111,4 +111,4 @@ dkgen::core::particle_definition::generate_weighted_decay_mode(random_uniform_0_
   return decay_table.back();
 }
 
-dkgen::core::decay_mode dkgen::core::particle_definition::null_decay{};
+GELATO::core::decay_mode GELATO::core::particle_definition::null_decay{};

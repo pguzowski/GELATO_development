@@ -1,5 +1,5 @@
-#include "dkgen/core/driver.hpp"
-#include "dkgen/core/decaying_particle_info.hpp"
+#include "GELATO/core/driver.hpp"
+#include "GELATO/core/decaying_particle_info.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -7,7 +7,7 @@
 #include <random>
 
 
-#include "dkgen/physics/higgs_portal_scalar.hpp"
+#include "GELATO/physics/higgs_portal_scalar.hpp"
 /*
   Generates a decay table for the Higgs Portal model, based on arXiv:1909.11670
 
@@ -45,12 +45,12 @@ int main(int argc, char** argv) {
     }
   }
 
-  dkgen::core::driver driver;
+  GELATO::core::driver driver;
 
-  dkgen::core::geometry geo({0,0,1.e4},{1e3,1e3,1e3});
+  GELATO::core::geometry geo({0,0,1.e4},{1e3,1e3,1e3});
   driver.set_geometry(geo);
-  dkgen::core::config conf;
-  conf.fix_system_of_units(dkgen::core::config::system_of_units::GeV_cm_ns);
+  GELATO::core::config conf;
+  conf.fix_system_of_units(GELATO::core::config::system_of_units::GeV_cm_ns);
   conf.set_force_decays_in_detector(force);
   driver.set_config(conf);
 
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     }()
   };
   //const std::string metadata = [](){ auto s = std::istringstream(); s << "model_theta=" << scalar_theta; return s.str(); }();
-  driver.set_particle_content(dkgen::physics::higgs_portal_from_kaons::create_particle_content(scalar_mass, scalar_theta,conf));
+  driver.set_particle_content(GELATO::physics::higgs_portal_from_kaons::create_particle_content(scalar_mass, scalar_theta,conf));
 
   auto& kaon = conf.physical_params().find_particle("kaon_pm");
   const int kpdg = -kaon.pdgcode;

@@ -1,4 +1,4 @@
-#include "dkgen/core/geometry.hpp"
+#include "GELATO/core/geometry.hpp"
 
 #include <utility>
 #include <vector>
@@ -9,7 +9,7 @@
 #include <iostream>
 #endif
 
-dkgen::core::geometry::geometry(vector3 centre, vector3 dims, rotation rot_from_detctor_to_beamline_system)
+GELATO::core::geometry::geometry(vector3 centre, vector3 dims, rotation rot_from_detctor_to_beamline_system)
   : active_volume_centre_in_beamline_system{std::move(centre)},
   active_volume_half_dimensions_in_detector_system{std::move(dims)},
   active_volume_rotation_from_detector_to_beamline_system{std::move(rot_from_detctor_to_beamline_system)}
@@ -17,23 +17,23 @@ dkgen::core::geometry::geometry(vector3 centre, vector3 dims, rotation rot_from_
   make_active_volume_rotation_from_beamline_to_detector_system();
 }
 
-dkgen::core::geometry& dkgen::core::geometry::set_active_volume_centre_in_beamline_system(vector3 centre) {
+GELATO::core::geometry& GELATO::core::geometry::set_active_volume_centre_in_beamline_system(vector3 centre) {
   active_volume_centre_in_beamline_system = std::move(centre);
   return *this;
 }
 
-dkgen::core::geometry& dkgen::core::geometry::set_active_volume_half_dimensions_in_detector_system(vector3 dims) {
+GELATO::core::geometry& GELATO::core::geometry::set_active_volume_half_dimensions_in_detector_system(vector3 dims) {
   active_volume_half_dimensions_in_detector_system = std::move(dims);
   return *this;
 }
 
-dkgen::core::geometry& dkgen::core::geometry::set_active_volume_rotation_from_detector_to_beamline_system(rotation rot) {
+GELATO::core::geometry& GELATO::core::geometry::set_active_volume_rotation_from_detector_to_beamline_system(rotation rot) {
   active_volume_rotation_from_detector_to_beamline_system = std::move(rot);
   make_active_volume_rotation_from_beamline_to_detector_system();
   return *this;
 }
 
-void dkgen::core::geometry::make_active_volume_rotation_from_beamline_to_detector_system() {
+void GELATO::core::geometry::make_active_volume_rotation_from_beamline_to_detector_system() {
   active_volume_rotation_from_beamline_to_detector_system =
 #ifdef EXPOSE_PHYSICS_VECTORS
     active_volume_rotation_from_detector_to_beamline_system.inverse();
@@ -42,17 +42,17 @@ void dkgen::core::geometry::make_active_volume_rotation_from_beamline_to_detecto
 #endif
 }
 
-bool dkgen::core::geometry::is_beamline_vector_in_active_volume(const vector3& v) const {
+bool GELATO::core::geometry::is_beamline_vector_in_active_volume(const vector3& v) const {
   return is_detector_vector_in_active_volume(rotate_and_translate_beamline_vector_to_detector_coordinates(v));
 }
 
-bool dkgen::core::geometry::is_detector_vector_in_active_volume(const vector3& v) const {
+bool GELATO::core::geometry::is_detector_vector_in_active_volume(const vector3& v) const {
   return std::abs(v.x()) < active_volume_half_dimensions_in_detector_system.x()
     && std::abs(v.y()) < active_volume_half_dimensions_in_detector_system.y()
     && std::abs(v.z()) < active_volume_half_dimensions_in_detector_system.z();
 }
 
-dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_intersections_for_beamline_vectors(
+GELATO::core::ordered_list_of_vectors GELATO::core::geometry::get_active_volume_intersections_for_beamline_vectors(
     const vector3& origin, const vector3& direction) const {
 #ifdef DEBUG
   std::cout << __FILE__<<" "<<__LINE__<<" "
@@ -82,7 +82,7 @@ dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_in
   return r;
 }
 
-dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_intersections_for_detector_vectors(
+GELATO::core::ordered_list_of_vectors GELATO::core::geometry::get_active_volume_intersections_for_detector_vectors(
     const vector3& origin, const vector3& direction) const {
   ordered_list_of_vectors ret;
   // work out all coordinates that interesect the 6 planes of the bounding box
@@ -155,12 +155,12 @@ dkgen::core::ordered_list_of_vectors dkgen::core::geometry::get_active_volume_in
   return ret;
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
+GELATO::core::vector3 GELATO::core::geometry::rotate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_beamline_to_detector_system * vin;
 }
 
-std::pair<dkgen::core::vector3, dkgen::core::vector3>
-dkgen::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(
+std::pair<GELATO::core::vector3, GELATO::core::vector3>
+GELATO::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(
     const vector3& vpos, const vector3& vdir) const {
   vector3 new_vdir = active_volume_rotation_from_beamline_to_detector_system * vdir;
   vector3 new_vpos =
@@ -168,22 +168,22 @@ dkgen::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordina
   return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
+GELATO::core::vector3 GELATO::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_beamline_to_detector_system * (vin - active_volume_centre_in_beamline_system);
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
+GELATO::core::vector3 GELATO::core::geometry::rotate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_detector_to_beamline_system * vin;
 }
 
-std::pair<dkgen::core::vector3, dkgen::core::vector3>
-dkgen::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(
+std::pair<GELATO::core::vector3, GELATO::core::vector3>
+GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(
     const vector3& vpos, const vector3& vdir) const {
   vector3 new_vdir = active_volume_rotation_from_detector_to_beamline_system * vdir;
   vector3 new_vpos = active_volume_rotation_from_detector_to_beamline_system * vpos + active_volume_centre_in_beamline_system;
   return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
 }
 
-dkgen::core::vector3 dkgen::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
+GELATO::core::vector3 GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_detector_to_beamline_system * vin + active_volume_centre_in_beamline_system;
 }

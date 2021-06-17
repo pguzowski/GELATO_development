@@ -1,10 +1,10 @@
-#ifndef __dkgen_core_config_hpp__
-#define __dkgen_core_config_hpp__
+#ifndef __GELATO_core_config_hpp__
+#define __GELATO_core_config_hpp__
 
 #include <string>
 #include <map>
 
-namespace dkgen {
+namespace GELATO {
   namespace core {
     class config {
       public:

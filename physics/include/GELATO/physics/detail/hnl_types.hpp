@@ -1,9 +1,9 @@
-#ifndef __dkgen_physics_detail_hnl_types_hpp__
-#define __dkgen_physics_detail_hnl_types_hpp__
+#ifndef __GELATO_physics_detail_hnl_types_hpp__
+#define __GELATO_physics_detail_hnl_types_hpp__
 
 #include <cmath>
 
-namespace dkgen {
+namespace GELATO {
   namespace physics {
     namespace detail {
       namespace hnl {
@@ -42,7 +42,7 @@ namespace dkgen {
           model_parameters& operator=(const model_parameters&) = default;
           model_parameters& operator=(model_parameters&&) = default;
 
-          // copy from dkgen::physics::heavy_neutral_leptons::model_parameters
+          // copy from GELATO::physics::heavy_neutral_leptons::model_parameters
           // without defining that struct in this header file or includes
           template<typename T> model_parameters(const T& p)
             : HNL_mass{p.HNL_mass}, U_e4{p.U_e4}, U_m4{p.U_m4}, U_t4{p.U_t4}, is_majorana{p.is_majorana} { }
@@ -66,9 +66,9 @@ namespace dkgen {
           const double gR;
           const double pi3_inv;
           const model_parameters& raw_params;
-          const dkgen::core::config& config;
+          const GELATO::core::config& config;
           derived_params(const model_parameters& p,
-              const dkgen::core::config& c) :
+              const GELATO::core::config& c) :
             U2_e{std::pow(p.U_e4,2)}, U2_m{std::pow(p.U_m4,2)},
             U2_t{std::pow(p.U_t4,2)}, sum_U2{std::pow(p.U_e4,2) + std::pow(p.U_m4,2) + std::pow(p.U_t4,2)},
             m5{std::pow(p.HNL_mass,5)}, m3{std::pow(p.HNL_mass,3)},
