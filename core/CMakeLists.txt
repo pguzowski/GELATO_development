@@ -107,6 +107,7 @@ add_library(Core SHARED
   "src/particle_history.cpp"
   "src/vectors.cpp"
   )
+set_target_properties(Core PROPERTIES PREFIX "libGELATO")
 add_library(GELATO::Core ALIAS Core)
 target_compile_features(Core PUBLIC cxx_std_14)
 if(PHYSICS_BACKEND STREQUAL "CLHEP")
