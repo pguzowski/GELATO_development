@@ -17,13 +17,13 @@ namespace GELATO {
 
         template<class UnaryFunction>
           ordered_list_of_vectors& apply_transformation(UnaryFunction transform) {
-            for(auto& kv : map) {
+            for(auto& kv : list_of_vectors) {
               transform(kv.second);
             }
             return *this;
           }
       private:
-        std::vector<std::pair<double,vector3>> map;
+        std::vector<std::pair<double,vector3>> list_of_vectors;
     };
   }
 }

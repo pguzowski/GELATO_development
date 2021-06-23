@@ -131,7 +131,7 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
     bool decay_set = false;
     if(p.lifetime() == 0.) {
       // decay straight away
-      parent->set_decay_pos_from_tof(0., config.physical_params().speed_of_light);
+      parent->set_decay_pos_from_tof(0., configuration.physical_params().speed_of_light);
       decay_set = true;
     }
 
@@ -142,7 +142,7 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
       const vector3& origin = parent->production_position().vect();
       auto detector_points = geo.get_active_volume_intersections_for_beamline_vectors(origin, direction);
       if(detector_points.size() >= 2) {
-        const double speed = parent->production_momentum().beta() * config.physical_params().speed_of_light;
+        const double speed = parent->production_momentum().beta() * configuration.physical_params().speed_of_light;
         const double tof1 = (detector_points.first() - origin).mag()/speed;
         const double tof2 = (detector_points.last() - origin).mag()/speed;
         const double u = rng();
@@ -153,7 +153,7 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
         //        [too big = ~10^300 sec, i.e. much longer than lifetime of unvierse ^ many powers]
         const double tof = tof1 - p.lifetime() * std::log(1.- u + u*std::exp((tof1-tof2)/p.lifetime()));
         const double weight = std::exp(-tof1/p.lifetime()) - std::exp(-tof2/p.lifetime());
-        parent->set_decay_pos_from_tof(tof, config.physical_params().speed_of_light);
+        parent->set_decay_pos_from_tof(tof, configuration.physical_params().speed_of_light);
         parent->set_decay_weight(weight);
         decay_set = true;
       }
@@ -169,7 +169,7 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
 #endif
       const double u = rng();
       const double tof = -p.lifetime() * std::log(u);
-      parent->set_decay_pos_from_tof(tof, config.physical_params().speed_of_light);
+      parent->set_decay_pos_from_tof(tof, configuration.physical_params().speed_of_light);
     }
     for(auto& d : parent->get_children()) { // also need to update the children positions
       d->set_production_position(parent->decay_position());
@@ -202,11 +202,11 @@ const GELATO::core::particle_definition& GELATO::core::driver::find_particle(int
 }
 
 
-GELATO::core::driver& GELATO::core::driver::set_config(const GELATO::core::config& conf) {
+GELATO::core::driver& GELATO::core::driver::set_config(const config& conf) {
   if(conf.physical_params().speed_of_light < 0.) {
-    throw std::runtime_error("config: system of units has not been fixed yet");
+    throw std::runtime_error("configuration: system of units has not been fixed yet");
   }
-  config = conf;
+  configuration = conf;
   return *this;
 }
 
@@ -233,7 +233,7 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
   parent->multiply_decay_weight(weight);
   if(dm.is_null()) return;
 
-  if(config.force_decays_inside_detector() && dm.is_pure_final_state()) {
+  if(configuration.force_decays_inside_detector() && dm.is_pure_final_state()) {
     parent->set_pre_final_state();
     pure_final_states.push_back(parent);
   }

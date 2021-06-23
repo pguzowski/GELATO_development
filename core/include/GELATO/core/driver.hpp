@@ -30,7 +30,7 @@ namespace GELATO {
         
         particle_map particle_content;
         geometry geo;
-        ::GELATO::core::config config;
+        config configuration;
 
         // recursively generate decay positions, forcing some into the detector if
         // possible and "force_decays_inside_detector" config flag is on
