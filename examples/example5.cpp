@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
   std::string gaugestr = "";
   namespace lgb = GELATO::physics::leptophilic_gauge_boson;
   lgb::leptophilic_gauges gauge = lgb::leptophilic_gauges::Le_minus_Ltau;
-  bool force = false, majorana = false, debug = false;
+  bool force = false, debug = false;
   std::string fluxfn = "";
   double pot_per_flux_file = 100e3;
   std::string rootfn = "";
@@ -164,10 +164,6 @@ int main(int argc, char** argv) {
     }
     if(std::string(argv[i]) == "-f") {
       force = true;
-      continue;
-    }
-    if(std::string(argv[i]) == "-j") { // 'j' for Majorana (m/M already taken)
-      majorana = true;
       continue;
     }
     if(std::string(argv[i]) == "-d") { 
