@@ -381,10 +381,10 @@ int main(int argc, char** argv) {
       gen.seed(rd());
     }
     size_t i = 0;
-    long long n_output = 0, n_nonnan = 0;
+    long long n_output = 0;
     auto fluxiter = input_flux.begin();
     int nloops = 0;
-    double sum_weight = 0., sum_weight_nonnan = 0.;
+    double sum_weight = 0.;
     double pot_burnt = 0.;
 
     if(max_weight > 0. || unweighted_burn_size > 0) {
@@ -463,10 +463,6 @@ int main(int argc, char** argv) {
           hepevt.total_weight = 1.;
         }
         sum_weight += hepevt.total_weight;
-        if(!std::isnan(hepevt.total_weight)) {
-          sum_weight_nonnan += hepevt.total_weight;
-          n_nonnan++;
-        }
         if(has_hepout) {
           hepout << hepevt.build_text();
         }
@@ -529,7 +525,6 @@ int main(int argc, char** argv) {
     }
     if(has_hepout) {
       hepout << "#END total_weight="<<sum_weight
-        <<" (non-nan: "<<sum_weight_nonnan<<" from "<<n_nonnan<<"/"<<n_output<<" entries)"
         <<" pot_per_flux_file=" << pot_per_flux_file
       << " total_pot="<<tot_pot<<" "<<metadata<<std::endl;
     }
