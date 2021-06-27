@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
   std::string geo_type = "bnb";
   double max_weight = -1.;
   size_t unweighted_burn_size = 0;
+  bool unique_seed = false;
   for(int i = 0; i < argc; ++i) {
     if(i+1 < argc && std::string(argv[i]) == "-n") { // number initial particles to gen
       n_to_gen = std::atoll(argv[i+1]);
@@ -164,6 +165,10 @@ int main(int argc, char** argv) {
     }
     if(std::string(argv[i]) == "-f") {
       force = true;
+      continue;
+    }
+    if(std::string(argv[i]) == "-s") {
+      unique_seed = true;
       continue;
     }
     if(std::string(argv[i]) == "-d") { 
@@ -366,6 +371,10 @@ int main(int argc, char** argv) {
 
     std::uniform_real_distribution<double> rng;
     std::default_random_engine gen;
+    if(unique_seed) {
+      std::random_device rd;
+      gen.seed(rd());
+    }
     size_t i = 0;
     long long n_output = 0;
     auto fluxiter = input_flux.begin();
