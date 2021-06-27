@@ -5,8 +5,8 @@ target_include_directories(Physics INTERFACE
   #$<INSTALL_INTERFACE:include>
   include
 )
-find_package(Boost REQUIRED COMPONENTS math)
-target_link_libraries(Physics INTERFACE GELATO::Core Boost::math)
+find_package(Boost REQUIRED)
+target_link_libraries(Physics INTERFACE GELATO::Core Boost::boost)
 target_compile_features(Physics INTERFACE cxx_std_14)
 
 install(TARGETS Physics

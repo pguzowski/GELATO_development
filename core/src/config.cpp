@@ -12,21 +12,19 @@ GELATO::core::config& GELATO::core::config::fix_system_of_units(system_of_units 
       pparams.speed_of_light = 29.9791932;
       pparams.hbar = 6.582119569e-16;
       pparams.higgs_vev = 246.22;
-      pparams.CKM_Vtd = 8.1e-3;
-      pparams.CKM_Vts = 39.4e-3;
-      pparams.CKM_Vud = 0.9737;
-      pparams.CKM_Vus = 0.224;
       pparams.gFermi = 1.166379e-5;
-      pparams.sin2thW = 0.223;
       pparams.pion_decay_constant = 0.130;
+      pparams.kaon_decay_constant = 0.1566;
       pparams.particles = {
         // name,      pdg,   mass,          lifetime
         {"kaon_pm", { 321, 0.493677,         12.38 }},
         {"kaon_0L", { 130, 0.497648,         51.16 }},
         {"pion_pm", { 211, 0.13957061,       26.03 }},
         {"pion_0",  { 111, 0.1349770,         8.43e-8 }},
+        {"eta",     { 221, 0.547862,          5.0e-10 }},
         {"elec",    {  11, 0.5109989461e-3,  -1. }}, 
         {"muon",    {  13, 0.1056583745,      2.197e3 }},
+        {"tau",     {  15, 1.77686,           2.903e-4 }},
         {"gamma",   {  22, 0.,               -1. }},
         {"nu_e",    {  12, 0.,               -1. }},
         {"nu_mu",   {  14, 0.,               -1. }},
@@ -35,6 +33,13 @@ GELATO::core::config& GELATO::core::config::fix_system_of_units(system_of_units 
       };
       break;
   }
+  // unitless quantities
+  pparams.CKM_Vtd = 8.1e-3;
+  pparams.CKM_Vts = 39.4e-3;
+  pparams.CKM_Vud = 0.9737;
+  pparams.CKM_Vus = 0.224;
+  pparams.sin2thW = 0.223;
+  pparams.elec_charge = 0.3028619040941379; //std::sqrt(4. * M_PI / 137.);
   return *this;
 }
 

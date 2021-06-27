@@ -25,6 +25,8 @@ namespace GELATO {
           double gFermi;
           double sin2thW;
           double pion_decay_constant;
+          double kaon_decay_constant;
+          double elec_charge;
           physical_parameters() : speed_of_light(-1.) {}
           const standard_particle& find_particle(const std::string& name) const;
           private:
