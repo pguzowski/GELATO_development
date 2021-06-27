@@ -54,19 +54,22 @@ namespace GELATO {
 
           const double decay_width_to_e_e = (mass_boson <= 2. * elec_mass) ? 0.
             : decay_width_to_leptons(
-                dparams.raw_params.gauge == leptophilic_gauges::Lmu_minus_Ltau ? kinmix2 : std::pow(dparams.raw_params.gauge_coupling, 2),
+                dparams.raw_params.gauge == leptophilic_gauges::Lmu_minus_Ltau
+                ? kinmix2 : std::pow(dparams.raw_params.gauge_coupling, 2),
                 std::pow(elec_mass, 2), dparams.raw_params.boson_mass
                 );
 
           const double decay_width_to_mu_mu = (mass_boson <= 2. * muon_mass) ? 0.
             : decay_width_to_leptons(
-                dparams.raw_params.gauge == leptophilic_gauges::Le_minus_Ltau ? kinmix2 : std::pow(dparams.raw_params.gauge_coupling, 2),
+                dparams.raw_params.gauge == leptophilic_gauges::Le_minus_Ltau
+                ? kinmix2 : std::pow(dparams.raw_params.gauge_coupling, 2),
                 std::pow(muon_mass, 2), dparams.raw_params.boson_mass
                 );
 
           const double decay_width_to_tau_tau = (mass_boson <= 2. * tau_mass) ? 0.
             : decay_width_to_leptons(
-                dparams.raw_params.gauge == leptophilic_gauges::Lmu_minus_Ltau ? kinmix2 : std::pow(dparams.raw_params.gauge_coupling, 2),
+                dparams.raw_params.gauge == leptophilic_gauges::Le_minus_Lmu
+                ? kinmix2 : std::pow(dparams.raw_params.gauge_coupling, 2),
                 std::pow(tau_mass, 2), dparams.raw_params.boson_mass
                 );
 

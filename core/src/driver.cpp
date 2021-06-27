@@ -15,14 +15,6 @@
 #include <iostream>
 #endif
 
-/*
-GELATO::core::driver::driver() {
-}
-
-GELATO::core::driver::~driver() {
-}
-*/
-
 GELATO::core::particle_history GELATO::core::driver::generate_decays(
     const GELATO::core::particle_info& parent_meson,
     GELATO::core::random_uniform_0_1_generator rng

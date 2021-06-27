@@ -147,8 +147,8 @@ int main(int argc, char** argv) {
     if(i+1 < argc && std::string(argv[i]) == "-g") { // production modes to simulate
       geo_type = argv[i+1];
       i++;
-      if(geo_type != "bnb" && geo_type != "numi" && geo_type != "sbnd") {
-        std::cerr << " Geometry type "<<geo_type<<" must be 'bnb' or 'numi' or 'sbnd' (default bnb)"<<std::endl;
+      if(geo_type != "bnb" && geo_type != "numi" && geo_type != "sbnd" && geo_type !="gastpc") {
+        std::cerr << " Geometry type "<<geo_type<<" must be 'bnb' or 'numi' or 'sbnd' or 'gastpc' (default bnb)"<<std::endl;
         return -1;
       }
       continue;
@@ -208,15 +208,20 @@ int main(int argc, char** argv) {
   driver.set_geometry(geo);
 
   } else if(geo_type=="bnb") {
-  /*
-   *                BNB
-   */
-  GELATO::core::geometry geo({0., 0., 475e2}, {1.25e2, 1.25e2, 5e2});
-  driver.set_geometry(geo);
+    /*
+     *                BNB
+     */
+    GELATO::core::geometry geo({0., 0., 475e2}, {1.25e2, 1.25e2, 5e2});
+    driver.set_geometry(geo);
   }
   else if(geo_type == "sbnd") {
-  GELATO::core::geometry geo({-74., 0., 110e2}, {2e2, 2e2, 2.5e2}); // sbnd is not directly on-axis, but offset by ~0.75m in x
-  driver.set_geometry(geo);
+    GELATO::core::geometry geo({-74., 0., 110e2}, {2e2, 2e2, 2.5e2}); // sbnd is not directly on-axis, but offset by ~0.75m in x
+    driver.set_geometry(geo);
+  }
+  else if(geo_type == "gastpc") {
+    // dune gastpc is 5m-diameter, 5m long cylinder, and front is 579m from target
+    GELATO::core::geometry geo({0., 0., 581.5e2}, {2.5e2, 2.5e2, 2.5e2});
+    driver.set_geometry(geo);
   }
   
   //const double scalar_mass = mass; // GeV
@@ -376,10 +381,10 @@ int main(int argc, char** argv) {
       gen.seed(rd());
     }
     size_t i = 0;
-    long long n_output = 0;
+    long long n_output = 0, n_nonnan = 0;
     auto fluxiter = input_flux.begin();
     int nloops = 0;
-    double sum_weight = 0.;
+    double sum_weight = 0., sum_weight_nonnan = 0.;
     double pot_burnt = 0.;
 
     if(max_weight > 0. || unweighted_burn_size > 0) {
@@ -458,6 +463,10 @@ int main(int argc, char** argv) {
           hepevt.total_weight = 1.;
         }
         sum_weight += hepevt.total_weight;
+        if(!std::isnan(hepevt.total_weight)) {
+          sum_weight_nonnan += hepevt.total_weight;
+          n_nonnan++;
+        }
         if(has_hepout) {
           hepout << hepevt.build_text();
         }
@@ -519,7 +528,9 @@ int main(int argc, char** argv) {
       rootf=0;
     }
     if(has_hepout) {
-      hepout << "#END total_weight="<<sum_weight<<" pot_per_flux_file=" << pot_per_flux_file
+      hepout << "#END total_weight="<<sum_weight
+        <<" (non-nan: "<<sum_weight_nonnan<<" from "<<n_nonnan<<"/"<<n_output<<" entries)"
+        <<" pot_per_flux_file=" << pot_per_flux_file
       << " total_pot="<<tot_pot<<" "<<metadata<<std::endl;
     }
   }

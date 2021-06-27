@@ -24,8 +24,6 @@ namespace GELATO {
 // hide away the physics implementation from the end user
 // allows compiling with different library implementations
 // without polluting end user namespace with included libraries
-// However performance is 3x worse due to memory allocations
-// need to investigate speedups
 
 #include <memory>
 //#include <experimental/propagate_const>
