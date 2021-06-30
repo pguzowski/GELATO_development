@@ -24,6 +24,8 @@ namespace GELATO {
         
         // main event loop: generate decay of initial particle
         particle_history generate_decays(const particle_info& initial_decay, random_uniform_0_1_generator rng) const;
+
+        const geometry& get_geometry() const { return geo; }
         
       private:
         using decaying_particle_info_ptr = decaying_particle_info*;
