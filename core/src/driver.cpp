@@ -130,7 +130,8 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
     if(!decay_set && parent->is_pre_final_state()) {
       // we have to force the decay position to be inside the detector, if possible
 
-      const vector3& direction = parent->production_momentum().vect().unit();
+      const vector3& direction = parent->production_momentum().vect().mag() > 0. ?
+        parent->production_momentum().vect().unit() : vector3{0.,0.,0.};
       const vector3& origin = parent->production_position().vect();
       auto detector_points = geo.get_active_volume_intersections_for_beamline_vectors(origin, direction);
       if(detector_points.size() >= 2) {

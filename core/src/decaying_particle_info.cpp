@@ -72,7 +72,7 @@ GELATO::core::decaying_particle_info::set_production_position(fourvector&& prodp
 
 GELATO::core::decaying_particle_info& GELATO::core::decaying_particle_info::set_decay_pos_from_tof(double tof, double speed_of_light) {
   const double dist = part_info.momentum.beta() * tof * speed_of_light;
-  const vector3& direction = part_info.momentum.vect().unit();
+  const vector3& direction = part_info.momentum.vect().mag() > 0. ? part_info.momentum.vect().unit() : vector3{0.,0.,0.};
   const vector3& decpos = part_info.prod_pos.vect() + direction * dist;
 #ifdef EXPOSE_PHYSICS_VECTORS
   part_info.dec_pos.set(decpos, part_info.prod_pos.t() + tof);

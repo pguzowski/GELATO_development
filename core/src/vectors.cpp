@@ -131,7 +131,9 @@ GELATO::core::vector3 GELATO::core::vector3::unit() const {
 
 GELATO::core::vector3 GELATO::core::vector3::operator*(double a) const {
   vector3 ret(*this);
-  ret.set_mag(ret.mag()*a);
+  if(ret.mag() > 0.) {
+    ret.set_mag(ret.mag()*a);
+  }
   return ret;
 }
 

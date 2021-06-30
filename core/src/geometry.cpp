@@ -89,67 +89,72 @@ GELATO::core::ordered_list_of_vectors GELATO::core::geometry::get_active_volume_
   // first add case where origin is inside the detector
   if(is_detector_vector_in_active_volume(origin)) {
     ret.add(0.,origin);
+    if(!(0. < direction.mag())) {
+      ret.add(0.,origin);
+    }
   }
-  auto get_plane_intersections = [](
-      double direction_coordinate, double plane_coordinate, double origin_coordinate,
-      double other_origin_coordinate_1, double other_origin_coordinate_2,
-      double other_direction_coordinate_1, double other_direction_coordinate_2,
-      double dimension_1, double dimension_2
-      ) {
-    std::vector<double> alphas;
-    // if parallel to the plane, there is no intersection
-    if(std::abs(direction_coordinate) > 0.) {
-      // check both sides
-      for(int plane_offset: {-1, +1}) {
-        const double alpha = (plane_offset * plane_coordinate - origin_coordinate) / direction_coordinate;
-        if(alpha < 0.) {
-          // going in the wrong direction
-          continue;
-        }
-        const double intersection_coordinate_1 = alpha * other_direction_coordinate_1 + other_origin_coordinate_1;
-        const double intersection_coordinate_2 = alpha * other_direction_coordinate_2 + other_origin_coordinate_2;
-        if(std::abs(intersection_coordinate_1) < dimension_1 && std::abs(intersection_coordinate_2) < dimension_2) {
-          alphas.push_back(alpha);
+  if(0. < direction.mag()) {
+    auto get_plane_intersections = [](
+        double direction_coordinate, double plane_coordinate, double origin_coordinate,
+        double other_origin_coordinate_1, double other_origin_coordinate_2,
+        double other_direction_coordinate_1, double other_direction_coordinate_2,
+        double dimension_1, double dimension_2
+        ) {
+      std::vector<double> alphas;
+      // if parallel to the plane, there is no intersection
+      if(std::abs(direction_coordinate) > 0.) {
+        // check both sides
+        for(int plane_offset: {-1, +1}) {
+          const double alpha = (plane_offset * plane_coordinate - origin_coordinate) / direction_coordinate;
+          if(alpha < 0.) {
+            // going in the wrong direction
+            continue;
+          }
+          const double intersection_coordinate_1 = alpha * other_direction_coordinate_1 + other_origin_coordinate_1;
+          const double intersection_coordinate_2 = alpha * other_direction_coordinate_2 + other_origin_coordinate_2;
+          if(std::abs(intersection_coordinate_1) < dimension_1 && std::abs(intersection_coordinate_2) < dimension_2) {
+            alphas.push_back(alpha);
+          }
         }
       }
-    }
-    return alphas;
-  };
-  for(auto plane: {'x', 'y', 'z'}) {
-    switch(plane) {
-      case 'x':
-        {
-          auto alphas = get_plane_intersections(direction.x(), active_volume_half_dimensions_in_detector_system.x(), origin.x(),
-              origin.y(), origin.z(),
-              direction.y(), direction.z(),
-              active_volume_half_dimensions_in_detector_system.y(), active_volume_half_dimensions_in_detector_system.z());
-          for(auto a : alphas) {
-            ret.add(a, a * direction + origin);
+      return alphas;
+    };
+    for(auto plane: {'x', 'y', 'z'}) {
+      switch(plane) {
+        case 'x':
+          {
+            auto alphas = get_plane_intersections(direction.x(), active_volume_half_dimensions_in_detector_system.x(), origin.x(),
+                origin.y(), origin.z(),
+                direction.y(), direction.z(),
+                active_volume_half_dimensions_in_detector_system.y(), active_volume_half_dimensions_in_detector_system.z());
+            for(auto a : alphas) {
+              ret.add(a, a * direction + origin);
+            }
           }
-        }
-        break;
-      case 'y':
-        {
-          auto alphas = get_plane_intersections(direction.y(), active_volume_half_dimensions_in_detector_system.y(), origin.y(),
-              origin.x(), origin.z(),
-              direction.x(), direction.z(),
-              active_volume_half_dimensions_in_detector_system.x(), active_volume_half_dimensions_in_detector_system.z());
-          for(auto a : alphas) {
-            ret.add(a, a * direction + origin);
+          break;
+        case 'y':
+          {
+            auto alphas = get_plane_intersections(direction.y(), active_volume_half_dimensions_in_detector_system.y(), origin.y(),
+                origin.x(), origin.z(),
+                direction.x(), direction.z(),
+                active_volume_half_dimensions_in_detector_system.x(), active_volume_half_dimensions_in_detector_system.z());
+            for(auto a : alphas) {
+              ret.add(a, a * direction + origin);
+            }
           }
-        }
-        break;
-      case 'z':
-        {
-          auto alphas = get_plane_intersections(direction.z(), active_volume_half_dimensions_in_detector_system.z(), origin.z(),
-              origin.x(), origin.y(),
-              direction.x(), direction.y(),
-              active_volume_half_dimensions_in_detector_system.x(), active_volume_half_dimensions_in_detector_system.y());
-          for(auto a : alphas) {
-            ret.add(a, a * direction + origin);
+          break;
+        case 'z':
+          {
+            auto alphas = get_plane_intersections(direction.z(), active_volume_half_dimensions_in_detector_system.z(), origin.z(),
+                origin.x(), origin.y(),
+                direction.x(), direction.y(),
+                active_volume_half_dimensions_in_detector_system.x(), active_volume_half_dimensions_in_detector_system.y());
+            for(auto a : alphas) {
+              ret.add(a, a * direction + origin);
+            }
           }
-        }
-        break;
+          break;
+      }
     }
   }
   return ret;
