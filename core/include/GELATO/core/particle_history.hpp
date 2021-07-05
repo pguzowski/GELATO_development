@@ -20,15 +20,15 @@ namespace GELATO {
     };
     struct hepevt_info {
       unsigned int event_counter;
-      double total_weight;
+      double total_log_weight;
       std::vector<hepevt_particle> particle_info;
       std::string build_text(const char* metadata = "") const;
     };
     class particle_history {
       public:
-        particle_history()  : total_weight(1.) {}
+        particle_history()  : total_log_weight(0.) {}
 
-        double get_total_weight() const { return total_weight; };
+        double get_total_log_weight() const { return total_log_weight; };
 
         // transfer parent ownership to this object
         particle_history& build_hierarchy(std::unique_ptr<decaying_particle_info>&& p);
@@ -46,7 +46,7 @@ namespace GELATO {
         
         std::unique_ptr<decaying_particle_info> parent; // need to keep ownership so that hierarchy remains valid
         std::vector<decaying_particle_info_ptr> hierarchy;
-        double total_weight;
+        double total_log_weight;
         static unsigned int event_counter;
     };
   }

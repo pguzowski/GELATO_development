@@ -10,17 +10,17 @@ namespace GELATO {
   namespace core {
     class particle_info {
       public:
-        particle_info() : pdg_code{0}, weight{1.} { }
-        particle_info(int pdg, fourvector prod_pos, fourvector prod_mom, double weight = 1.) 
-          : pdg_code{pdg}, prod_pos{std::move(prod_pos)},  momentum{std::move(prod_mom)}, weight{weight} {
+        particle_info() : pdg_code{0}, log_weight{0.} { }
+        particle_info(int pdg, fourvector prod_pos, fourvector prod_mom, double log_wt = 1.) 
+          : pdg_code{pdg}, prod_pos{std::move(prod_pos)},  momentum{std::move(prod_mom)}, log_weight{log_wt} {
           reset_decay_position();
         };
-        particle_info(int pdg, fourvector prod_pos, fourvector dec_pos, fourvector prod_mom, double weight = 1.)
+        particle_info(int pdg, fourvector prod_pos, fourvector dec_pos, fourvector prod_mom, double log_wt = 0.)
           : pdg_code{pdg}, prod_pos{std::move(prod_pos)},
-          dec_pos{std::move(dec_pos)}, momentum{std::move(prod_mom)}, weight{weight}   { }
+          dec_pos{std::move(dec_pos)}, momentum{std::move(prod_mom)}, log_weight{log_wt}   { }
 
         int pdg() const { return pdg_code; };
-        double get_weight() const { return weight; };
+        double get_log_weight() const { return log_weight; };
 
         const fourvector& production_position() const { return prod_pos; };
         const fourvector& production_momentum() const { return momentum; };
@@ -32,7 +32,7 @@ namespace GELATO {
         fourvector prod_pos;
         fourvector dec_pos;
         fourvector momentum;
-        double weight;
+        double log_weight;
         void reset_decay_position();
         friend class decaying_particle_info;
     };
@@ -78,14 +78,14 @@ namespace GELATO {
         const fourvector& decay_position() const { return part_info.dec_pos; };
         const fourvector& decay_momentum() const { return part_info.momentum; };
 
-        double decay_weight() const { return part_info.weight; };
+        double decay_log_weight() const { return part_info.log_weight; };
 
         decaying_particle_info& set_decay_pos_from_tof(double tof, double speed_of_light);
         decaying_particle_info& set_production_position(const fourvector& pos);
         decaying_particle_info& set_production_position(fourvector&& pos);
 
-        decaying_particle_info& set_decay_weight(double wt) { part_info.weight = wt; return *this; };
-        decaying_particle_info& multiply_decay_weight(double wt) { part_info.weight *= wt; return *this; };
+        decaying_particle_info& set_decay_log_weight(double log_wt) { part_info.log_weight = log_wt; return *this; };
+        decaying_particle_info& multiply_decay_log_weight(double log_wt) { part_info.log_weight += log_wt; return *this; };
 
         decaying_particle_info* get_parent() const { return parent; }
         const child_vector_t& get_children() const { return children; }

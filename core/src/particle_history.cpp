@@ -27,13 +27,13 @@ GELATO::core::particle_history& GELATO::core::particle_history::build_hierarchy(
     event_counter++;
     hierarchy.reserve(parent->get_number_of_particles_in_hierarchy());
     hierarchy.push_back(parent.get());
-    total_weight *= parent->decay_weight();
+    total_log_weight += parent->decay_log_weight();
     std::function<void(decaying_particle_info_ptr)> traverse = [this,&traverse](decaying_particle_info_ptr current_parent) -> void {
       auto const& daughters = current_parent->get_children();
 
       for(auto const& d : daughters) {
         hierarchy.push_back(d.get());
-        total_weight *= d->decay_weight();
+        total_log_weight += d->decay_log_weight();
       }
       // double-traversal because we have to flatten the hierarchy horizontally for hepevt format
       for(auto const& d : daughters) {
@@ -57,7 +57,7 @@ GELATO::core::hepevt_info GELATO::core::particle_history::build_hepevt_output_wi
   }
   hepevt_info ret;
   ret.event_counter = event_counter;
-  ret.total_weight = total_weight;
+  ret.total_log_weight = total_log_weight;
   for(auto const& p : hierarchy) {
 
     auto find_pid = [this](auto p) -> int {
@@ -105,7 +105,7 @@ GELATO::core::hepevt_info GELATO::core::particle_history::build_hepevt_output_wi
 std::string GELATO::core::hepevt_info::build_text(const char* metadata) const {
   const size_t SIZEOF_BUFFER = 1000;
   char buffer[SIZEOF_BUFFER+1]; // +1 for extra terminating null character
-  std::snprintf(buffer,SIZEOF_BUFFER,"%d %lu weight=%g %s\n",event_counter,particle_info.size(), total_weight, metadata);
+  std::snprintf(buffer,SIZEOF_BUFFER,"%d %lu log_weight=%g %s\n",event_counter,particle_info.size(), total_log_weight, metadata);
   std::string ret = buffer;
   for (auto const& p: particle_info) {
     std::snprintf(buffer,SIZEOF_BUFFER,

@@ -62,7 +62,8 @@ int main(int argc, char** argv) {
   std::string decay_mode = "all";
   std::string flux_mode = "all";
   std::string geo_type = "bnb";
-  double max_weight = -1.;
+  const double most_negative_double = std::numeric_limits<double>::lowest();
+  double max_weight = most_negative_double;
   size_t unweighted_burn_size = 0;
   bool unique_seed = false;
   for(int i = 0; i < argc; ++i) {
@@ -154,7 +155,7 @@ int main(int argc, char** argv) {
       continue;
     }
     if(i+1 < argc && std::string(argv[i]) == "-w") { // unweighted mode; estimate of max weight
-      max_weight = std::atof(argv[i+1]);
+      max_weight = std::log(std::atof(argv[i+1]));
       i++;
       continue;
     }
@@ -387,16 +388,16 @@ int main(int argc, char** argv) {
     double sum_weight = 0.;
     double pot_burnt = 0.;
 
-    if(max_weight > 0. || unweighted_burn_size > 0) {
-      if(max_weight <= 0.) {
+    if(max_weight > most_negative_double || unweighted_burn_size > 0) {
+      if(max_weight <= most_negative_double) {
         size_t nburnt = 0;
         while(nburnt < unweighted_burn_size) {
           auto const& rrr = driver.generate_decays(*fluxiter, [&rng, &gen]()->double{return rng(gen);});
           if(rrr) {
             auto const& res = rrr.build_hepevt_output();
             //std::cerr << "Burning "<<nburnt <<" with w="<<res.total_weight<<std::endl;
-            if(res.total_weight > max_weight) {
-              max_weight = 1.1*res.total_weight;
+            if(res.total_log_weight > max_weight) {
+              max_weight = res.total_log_weight + 0.05;
               //std::cout << "Burnt "<<nburnt << " setting max_weight to "<<max_weight<<std::endl;
             }
             nburnt++;
@@ -406,7 +407,7 @@ int main(int argc, char** argv) {
             fluxiter=input_flux.begin();
           }
         }
-        std::cout << "Burnt "<<nburnt<<" events and found max_weight = "<<max_weight<<std::endl;
+        std::cout << "Burnt "<<nburnt<<" events and found log_max_weight = "<<max_weight<<std::endl;
         pot_burnt = pot_per_flux_file * std::distance(input_flux.begin(),fluxiter)/input_flux.size();
       }
     }
@@ -453,16 +454,16 @@ int main(int argc, char** argv) {
       if(res && (max_n_to_output  < 1 || n_output < max_n_to_output)) {
         auto hepevt = res.build_hepevt_output();
         if(max_weight > 0) {
-          const double weight = hepevt.total_weight;
+          const double weight = hepevt.total_log_weight;
           if(weight > max_weight) {
             std::cerr << "Error! Weight found "<<weight<<" > max_weight "<<max_weight<<"; output may be unrepresentative of truth."<<std::endl;
             break;
           }
           const double u = rng(gen);
-          if(weight < u * max_weight) continue;
-          hepevt.total_weight = 1.;
+          if(weight < std::log(u) + max_weight) continue;
+          hepevt.total_log_weight = 0.;
         }
-        sum_weight += hepevt.total_weight;
+        sum_weight += std::exp(hepevt.total_log_weight);
         if(has_hepout) {
           hepout << hepevt.build_text();
         }
@@ -472,7 +473,7 @@ int main(int argc, char** argv) {
           size_t imoms = 0;
           auto moms = std::vector<TLorentzVector*>{p1,p2,p3};
           std::vector<int> pdgs;
-          weight = hepevt.total_weight;
+          weight = std::exp(hepevt.total_log_weight);
           int number_of_particle_in_list = 1;
           int number_of_boson = 0;
           for(auto const& p : hepevt.particle_info) {
@@ -514,7 +515,7 @@ int main(int argc, char** argv) {
         nloops++;
       }
     }
-    const double tot_pot = (max_weight > 0. ? 1./max_weight : 1.)
+    const double tot_pot = (max_weight > most_negative_double ? 1./std::exp(max_weight) : 1.)
       * (pot_per_flux_file * (nloops + std::distance(input_flux.begin(),fluxiter) * 1./input_flux.size()) - pot_burnt);
     if(rootf) {
       t->SetTitle(Form("pot: %f",tot_pot));

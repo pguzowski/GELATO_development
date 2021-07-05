@@ -144,10 +144,19 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
         // FIXME: this code will introduce floating-point rounding errors if p.lifetime is too big
         //        might need a switch to a linear approximation
         //        [too big = ~10^300 sec, i.e. much longer than lifetime of unvierse ^ many powers]
+        
         const double tof = tof1 - p.lifetime() * std::log(1.- u + u*std::exp((tof1-tof2)/p.lifetime()));
-        const double weight = std::exp(-tof1/p.lifetime()) - std::exp(-tof2/p.lifetime());
+
+        // to get from production point to detector
+        const double log_survival_prob = -tof1/p.lifetime();
+
+        // probability of not decaying beyond detector
+        // = 1 - integral(tof2, infinity)
+        const double log_prob_decays_in_detector = std::log(1.-std::exp(-tof2/p.lifetime()));
+
+
         parent->set_decay_pos_from_tof(tof, configuration.physical_params().speed_of_light);
-        parent->set_decay_weight(weight);
+        parent->set_decay_log_weight(log_survival_prob + log_prob_decays_in_detector);
         decay_set = true;
       }
       else {
@@ -223,7 +232,7 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
   }
 #endif
   
-  parent->multiply_decay_weight(weight);
+  parent->multiply_decay_log_weight(std::log(weight));
   if(dm.is_null()) return;
 
   if(configuration.force_decays_inside_detector() && dm.is_pure_final_state()) {
@@ -289,7 +298,7 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
               );
           const double costh = p1.vect().unit().dot(reference);
           const double dalitz_weight = dm.twobody_dalitz_reweighter(costh);
-          parent->multiply_decay_weight(dalitz_weight);
+          parent->multiply_decay_log_weight(std::log(dalitz_weight));
         }
         break;
       default:
@@ -395,7 +404,7 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
           const double red_invmass2_12 = (p1+p2).m2() / parent->decay_momentum().m2();
           const double red_invmass2_13 = (p1+p3).m2() / parent->decay_momentum().m2();
           const double dalitz_weight = dm.threebody_dalitz_reweighter(red_invmass2_12,red_invmass2_13);
-          parent->multiply_decay_weight(dalitz_weight);
+          parent->multiply_decay_log_weight(std::log(dalitz_weight));
         }
         break;
       case decay_mode::reweighter_type::threebody_angular:
@@ -418,7 +427,7 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
           const double phi_23 = p2.vect().unit().delta_phi(p3.vect().unit());
           const double dalitz_weight = dm.angular_threebody_dalitz_reweighter(
               red_invmass2_12,red_invmass2_13,costh_2,phi_2,costh_3,phi_23);
-          parent->multiply_decay_weight(dalitz_weight);
+          parent->multiply_decay_log_weight(std::log(dalitz_weight));
         }
         break;
       default:
