@@ -58,10 +58,10 @@ namespace GELATO {
 
         // equation (4) of arXiv:1909.11670v1
         // don't forget about the x2 multiplicity factor for charged pions (later on)
-        auto decay_rate_to_pions = [scalar_mass, theta, higgs_vev](double daughter_mass) -> double {
+        auto decay_rate_to_pi0s = [scalar_mass, theta, higgs_vev](double daughter_mass) -> double {
           const double g = 2.*scalar_mass*scalar_mass/9. + 11.*daughter_mass*daughter_mass/9.;
           return
-            theta*theta * 3.*g*g
+            theta*theta * g*g
             / (32.*M_PI*higgs_vev*higgs_vev*scalar_mass)
             * std::sqrt(1.-4.*daughter_mass*daughter_mass/scalar_mass/scalar_mass);
         };
@@ -74,11 +74,11 @@ namespace GELATO {
           total_decay_rate += decay_rate_to_leptons(muon_mass);
         }
         if(scalar_mass > 2*pion_0_mass) {
-          total_decay_rate += decay_rate_to_pions(pion_0_mass);
+          total_decay_rate += decay_rate_to_pi0s(pion_0_mass);
         }
         if(scalar_mass > 2*pion_pm_mass) {
           // x2 for non-identical final states
-          total_decay_rate += 2.*decay_rate_to_pions(pion_pm_mass); 
+          total_decay_rate += 2.*decay_rate_to_pi0s(pion_pm_mass); 
         }
         const double scalar_lifetime = hbar / total_decay_rate;
 
@@ -115,13 +115,13 @@ namespace GELATO {
         }
         if(scalar_mass > 2*pion_0_mass) {
           scalar_info.add_decay(
-              { decay_rate_to_pions(pion_0_mass)/total_decay_rate, {{pion_0_pdg,final_state},{pion_0_pdg,final_state}} }
+              { decay_rate_to_pi0s(pion_0_mass)/total_decay_rate, {{pion_0_pdg,final_state},{pion_0_pdg,final_state}} }
               );
         }
         if(scalar_mass > 2*pion_pm_mass) {
           scalar_info.add_decay(
               // x2 for non-identical final states
-              { 2.*decay_rate_to_pions(pion_pm_mass)/total_decay_rate, {{pion_pm_pdg,final_state},{-pion_pm_pdg,final_state}} }
+              { 2.*decay_rate_to_pi0s(pion_pm_mass)/total_decay_rate, {{pion_pm_pdg,final_state},{-pion_pm_pdg,final_state}} }
               );
         }
 

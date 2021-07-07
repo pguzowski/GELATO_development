@@ -348,7 +348,7 @@ int main(int argc, char** argv) {
           if(muon_br <= 0) continue;
           wt *= muon_br;
         }
-        input_flux.push_back({pdg,{vx,vy,vz,vt-1},{vx,vy,vz,vt},{px,py,pz,e},wt});
+        input_flux.push_back({pdg,{vx,vy,vz,vt-1},{vx,vy,vz,vt},{px,py,pz,e},std::log(wt)});
       }
       std::cout << "Number of flux entries read: "<<nread<<", stored: "<<input_flux.size()<<std::endl;
     }
@@ -431,7 +431,7 @@ int main(int argc, char** argv) {
       auto const& res = driver.generate_decays(*fluxiter, [&rng, &gen]()->double{return rng(gen);});
       if(res && (max_n_to_output  < 1 || n_output < max_n_to_output)) {
         auto hepevt = res.build_hepevt_output();
-        if(max_weight > 0) {
+        if(max_weight > most_negative_double) {
           const double weight = hepevt.total_log_weight;
           if(weight > max_weight) {
             std::cerr << "Error! Weight found "<<weight<<" > max_weight "<<max_weight<<"; output may be unrepresentative of truth."<<std::endl;

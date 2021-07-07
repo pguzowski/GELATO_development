@@ -152,11 +152,14 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
 
         // probability of not decaying beyond detector
         // = 1 - integral(tof2, infinity)
-        const double log_prob_decays_in_detector = std::log(1.-std::exp(-tof2/p.lifetime()));
+        // conditional ::==> tof2-tof1
+        const double log_prob_doesnt_decay_beyond_detector = std::log(1.-std::exp(-(tof2-tof1)/p.lifetime()));
 
+        // prob decays inside detector = prob survives to detector * prob doesn't decay beyond detector
+        const double log_prob_decays_in_detector = log_survival_prob + log_prob_doesnt_decay_beyond_detector;
 
         parent->set_decay_pos_from_tof(tof, configuration.physical_params().speed_of_light);
-        parent->set_decay_log_weight(log_survival_prob + log_prob_decays_in_detector);
+        parent->set_decay_log_weight(log_prob_decays_in_detector);
         decay_set = true;
       }
       else {
