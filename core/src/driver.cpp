@@ -126,6 +126,7 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
       parent->set_decay_pos_from_tof(0., configuration.physical_params().speed_of_light);
       decay_set = true;
     }
+    const double dilated_lifetime = p.lifetime() * parent->production_momentum().gamma();
 
     if(!decay_set && parent->is_pre_final_state()) {
       // we have to force the decay position to be inside the detector, if possible
@@ -145,15 +146,15 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
         //        might need a switch to a linear approximation
         //        [too big = ~10^300 sec, i.e. much longer than lifetime of unvierse ^ many powers]
         
-        const double tof = tof1 - p.lifetime() * std::log(1.- u + u*std::exp((tof1-tof2)/p.lifetime()));
+        const double tof = tof1 - dilated_lifetime * std::log(1.- u + u*std::exp((tof1-tof2)/dilated_lifetime));
 
         // to get from production point to detector
-        const double log_survival_prob = -tof1/p.lifetime();
+        const double log_survival_prob = -tof1/dilated_lifetime;
 
         // probability of not decaying beyond detector
         // = 1 - integral(tof2, infinity)
         // conditional ::==> tof2-tof1
-        const double log_prob_doesnt_decay_beyond_detector = std::log(1.-std::exp(-(tof2-tof1)/p.lifetime()));
+        const double log_prob_doesnt_decay_beyond_detector = std::log(1.-std::exp(-(tof2-tof1)/dilated_lifetime));
 
         // prob decays inside detector = prob survives to detector * prob doesn't decay beyond detector
         const double log_prob_decays_in_detector = log_survival_prob + log_prob_doesnt_decay_beyond_detector;
@@ -173,7 +174,7 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
       std::cout << "Setting non-forced decay\n";
 #endif
       const double u = rng();
-      const double tof = -p.lifetime() * std::log(u);
+      const double tof = -dilated_lifetime * std::log(u);
       parent->set_decay_pos_from_tof(tof, configuration.physical_params().speed_of_light);
     }
     for(auto& d : parent->get_children()) { // also need to update the children positions

@@ -437,6 +437,14 @@ double GELATO::core::fourvector::beta() const {
 #endif
 }
 
+double GELATO::core::fourvector::gamma() const {
+#ifdef USING_CLHEP
+  return impl->gamma();
+#elif defined USING_ROOT
+  return impl->Gamma();
+#endif
+}
+
 
 GELATO::core::fourvector GELATO::core::fourvector::operator-(const fourvector& v2) const {
   fourvector ret(*this);

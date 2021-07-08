@@ -111,6 +111,7 @@ namespace GELATO {
         vector3 get_boost_vector() const;
 
         double beta() const;
+        double gamma() const;
 
         fourvector operator+(const fourvector& v2) const;
         fourvector operator-(const fourvector& v2) const;
