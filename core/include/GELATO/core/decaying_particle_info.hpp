@@ -11,7 +11,7 @@ namespace GELATO {
     class particle_info {
       public:
         particle_info() : pdg_code{0}, log_weight{0.} { }
-        particle_info(int pdg, fourvector prod_pos, fourvector prod_mom, double log_wt = 1.) 
+        particle_info(int pdg, fourvector prod_pos, fourvector prod_mom, double log_wt = 0.) 
           : pdg_code{pdg}, prod_pos{std::move(prod_pos)},  momentum{std::move(prod_mom)}, log_weight{log_wt} {
           reset_decay_position();
         };
