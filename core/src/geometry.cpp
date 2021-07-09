@@ -192,3 +192,56 @@ GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordin
 GELATO::core::vector3 GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
   return active_volume_rotation_from_detector_to_beamline_system * vin + active_volume_centre_in_beamline_system;
 }
+
+
+
+GELATO::core::ordered_list_of_vectors
+GELATO::core::geometry::project_detector_onto_first_vector_along_direction_of_second_vector(
+  const vector3& origin1, const vector3& direction1, const vector3& direction2
+) const {
+  ordered_list_of_vectors ret;
+  const double dotp = direction1.unit().dot(direction2.unit());
+
+  if(dotp <= -1.) {
+    // direction2 is antiparallel to direction1; return empty list
+    return ret;
+  }
+  if(dotp >= 1.) {
+    // direction2 is parallel to direction1; no plane possible
+    // generate from 0 to max perpendicular distance
+    ret.add(0.,origin1);
+  }
+  bool has_origin = false;
+  for(auto sideX: {-1., 1.}) {
+    for(auto sideY: {-1., 1.}) {
+      for(auto sideZ: {-1., 1.}) {
+        const vector3& corner = rotate_and_translate_detector_vector_to_beamline_coordinates({
+            sideX * active_volume_half_dimensions_in_detector_system.x(),
+            sideY * active_volume_half_dimensions_in_detector_system.y(),
+            sideZ * active_volume_half_dimensions_in_detector_system.z(),
+            });
+        const vector3& corner_from_origin = corner - origin1;
+        if(dotp > -1. && dotp < 1.) {
+          const double dist = (corner_from_origin.dot(direction2.unit()) - corner_from_origin.dot(direction1.unit()))
+            / (dotp*dotp - 1.);
+          if(dist > 0.) {
+            ret.add(dist, origin1 + dist * direction1.unit());
+          }
+          else if(!has_origin) {
+            ret.add(0., origin1);
+            has_origin = true;
+          }
+        }
+        else {
+          // direction2 is parallel to direction1; no plane possible
+          // use perpendicular projection onto vector1
+          const double dist = corner_from_origin.dot(direction1.unit());
+          if(dist > 0.) {
+            ret.add(dist, origin1 + dist * direction1.unit());
+          }
+        }
+      }
+    }
+  }
+  return ret;
+}

@@ -57,13 +57,21 @@ GELATO::core::particle_history GELATO::core::driver::generate_decays(
 
   // stage 1.5: choose random pure final state to force that decay into
   // the detector (if option has been enabled; otherwise pure_final_states is empty) 
-  if(pure_final_states.size() > 1) {
-    const size_t choice = static_cast<size_t>(pure_final_states.size() * rng());
+  if(!pure_final_states.empty()) {
+    const size_t choice = pure_final_states.size() > 1 ? static_cast<size_t>(pure_final_states.size() * rng()) : 0;
     auto const& keep_this_one = *std::next(pure_final_states.begin(),choice);
     for(auto const& decpar : pure_final_states) {
       if(decpar != keep_this_one) {
         decpar->unset_pre_final_state();
       }
+    }
+    // cascade state_types up the chain from pre-final state
+    decaying_particle_info::state_type state = keep_this_one->get_state_type() + 1;
+    decaying_particle_info_ptr pparent = keep_this_one->get_parent();
+    while(pparent != nullptr) {
+      pparent->set_state_type(state);
+      state++;
+      pparent = pparent->get_parent();
     }
   }
 
@@ -128,13 +136,25 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
     }
     const double dilated_lifetime = p.lifetime() * parent->production_momentum().gamma();
 
-    if(!decay_set && parent->is_pre_final_state()) {
+    const decaying_particle_info::state_type state = parent->get_state_type();
+    if(!decay_set && (state == decaying_particle_info::state_types::pre_final_state
+          || state == decaying_particle_info::state_types::pre_final_state+1)) {
       // we have to force the decay position to be inside the detector, if possible
 
       const vector3& direction = parent->production_momentum().vect().mag() > 0. ?
         parent->production_momentum().vect().unit() : vector3{0.,0.,0.};
       const vector3& origin = parent->production_position().vect();
-      auto detector_points = geo.get_active_volume_intersections_for_beamline_vectors(origin, direction);
+      auto find_pre_final_state_direction = [](decaying_particle_info_ptr p) {
+        for(auto const& d : p->get_children()) {
+          if(d->is_pre_final_state()) return d->production_momentum().vect().unit();
+        }
+        throw std::runtime_error("Cannot find daughter direction of pre-final state");
+      };
+      auto detector_points = 
+        state == decaying_particle_info::state_types::pre_final_state
+        ? geo.get_active_volume_intersections_for_beamline_vectors(origin, direction)
+        : geo.project_detector_onto_first_vector_along_direction_of_second_vector(
+            origin, direction, find_pre_final_state_direction(parent));
       if(detector_points.size() >= 2) {
         const double speed = parent->production_momentum().beta() * configuration.physical_params().speed_of_light;
         const double tof1 = (detector_points.first() - origin).mag()/speed;
@@ -319,9 +339,11 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
 #endif
 
     add_new_daughter_to_queue(sign_flip ^ sign_flip1 ? d1.antipdg() : d1.pdg(), parent->decay_position(), std::move(p1),
-          dm.daughters[0].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
+          dm.daughters[0].second ?
+          decaying_particle_info::state_types::final_state : decaying_particle_info::state_types::non_final);
     add_new_daughter_to_queue(sign_flip ^ sign_flip2 ? d2.antipdg() : d2.pdg(), parent->decay_position(), std::move(p2),
-          dm.daughters[1].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
+          dm.daughters[1].second ?
+          decaying_particle_info::state_types::final_state : decaying_particle_info::state_types::non_final);
 
   }
   else if(dm.daughters.size() == 3) {
@@ -450,11 +472,14 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
 #endif
 
     add_new_daughter_to_queue(sign_flip ^ sign_flip1 ? d1.antipdg() : d1.pdg(), parent->decay_position(), std::move(p1),
-          dm.daughters[0].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
+          dm.daughters[0].second ?
+          decaying_particle_info::state_types::final_state : decaying_particle_info::state_types::non_final);
     add_new_daughter_to_queue(sign_flip ^ sign_flip2 ? d2.antipdg() : d2.pdg(), parent->decay_position(), std::move(p2),
-          dm.daughters[1].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
+          dm.daughters[1].second ?
+          decaying_particle_info::state_types::final_state : decaying_particle_info::state_types::non_final);
     add_new_daughter_to_queue(sign_flip ^ sign_flip3 ? d3.antipdg() : d3.pdg(), parent->decay_position(), std::move(p3),
-          dm.daughters[2].second ? decaying_particle_info::state_type::final_state : decaying_particle_info::state_type::non_final);
+          dm.daughters[2].second ?
+          decaying_particle_info::state_types::final_state : decaying_particle_info::state_types::non_final);
   }
   else {
     throw std::runtime_error("4+ body decays are not implemented");

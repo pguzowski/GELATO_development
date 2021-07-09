@@ -45,13 +45,21 @@ namespace GELATO {
         // final states are non-decaying (within this framework)
         // pre final states are states that only decay to final states
         // non final states are the rest
-        enum class state_type { non_final, pre_final_state, final_state };
+        //enum class state_type { non_final, pre_final_state, final_state };
+        //
+        // need integer state type, for arbitrarily long (pre)^n -final states
+        using state_type = int;
+        struct state_types { // not using enum, to implicitly cast to integer
+          static constexpr state_type non_final = -1;
+          static constexpr state_type final_state = 0;
+          static constexpr state_type pre_final_state = 1;
+        };
 
         // no default constructor
         decaying_particle_info() = delete;
         //decaying_particle_info() : part_info{}, parent{nullptr}, state{state_type::final_state} { }
         // promote particle_info to decaying_particle_info as parent
-        decaying_particle_info(particle_info pi, state_type state = state_type::non_final)
+        decaying_particle_info(particle_info pi, state_type state = state_types::non_final)
           : part_info{std::move(pi)}, parent{nullptr}, state{state} { }
         // Parent should be nullptr or ptr to parent 
         decaying_particle_info(decaying_particle_info_ptr parent, int pdg, const fourvector& prod_pos,
@@ -92,11 +100,14 @@ namespace GELATO {
 
         decaying_particle_info& add_child(child_t&& child) { children.push_back(std::move(child)); return *this; }
 
-        bool is_final_state() const { return state == state_type::final_state; }
+        bool is_final_state() const { return state == state_types::final_state; }
         // all daughters are final states
-        bool is_pre_final_state() const { return state == state_type::pre_final_state; }
-        decaying_particle_info& set_pre_final_state() { state = state_type::pre_final_state; return *this; }
-        decaying_particle_info& unset_pre_final_state() { state = state_type::non_final; return *this; }
+        bool is_pre_final_state() const { return state == state_types::pre_final_state; }
+        state_type get_state_type() const { return state; }
+        decaying_particle_info& set_state_type(state_type s) { state = s; return *this; }
+        decaying_particle_info& unset_state_type() { state = state_types::non_final; return *this; }
+        decaying_particle_info& set_pre_final_state() { state = state_types::pre_final_state; return *this; }
+        decaying_particle_info& unset_pre_final_state() { state = state_types::non_final; return *this; }
 
         bool is_decay_position_set() const { return !(part_info.dec_pos.t() < part_info.prod_pos.t()); }
 

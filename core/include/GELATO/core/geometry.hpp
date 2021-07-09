@@ -17,14 +17,21 @@ namespace GELATO {
 
         bool is_beamline_vector_in_active_volume(const vector3& v) const;
         bool is_detector_vector_in_active_volume(const vector3& v) const;
+
         ordered_list_of_vectors get_active_volume_intersections_for_beamline_vectors(
             const vector3& origin, const vector3& direction) const;
         ordered_list_of_vectors get_active_volume_intersections_for_detector_vectors(
             const vector3& origin, const vector3& direction) const;
+
+        ordered_list_of_vectors project_detector_onto_first_vector_along_direction_of_second_vector(
+            const vector3& origin1, const vector3& direction1, const vector3& direction2
+            ) const;
+        
         vector3 rotate_beamline_vector_to_detector_coordinates(const vector3& vin) const;
         std::pair<vector3,vector3>
           rotate_and_translate_beamline_vector_to_detector_coordinates(const vector3& vpos, const vector3& vdir) const;
         vector3 rotate_and_translate_beamline_vector_to_detector_coordinates(const vector3& vin) const;
+        
         vector3 rotate_detector_vector_to_beamline_coordinates(const vector3& vin) const;
         std::pair<vector3, vector3>
           rotate_and_translate_detector_vector_to_beamline_coordinates(const vector3& vpos, const vector3& vdir) const;
