@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <limits>
 
 namespace GELATO {
   namespace core {
