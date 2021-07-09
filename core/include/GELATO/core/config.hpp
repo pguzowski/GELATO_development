@@ -37,8 +37,11 @@ namespace GELATO {
         bool force_decays_inside_detector() const { return force_decays_in_detector; }
         config& fix_system_of_units(system_of_units sys);
         config& set_force_decays_in_detector(bool fdid) { force_decays_in_detector = fdid; return *this; }
+        config& set_minimum_event_log_weight(double log_wt) { minimum_event_log_weight = log_wt; return *this; }
+        double get_minimum_event_log_weight() const { return minimum_event_log_weight; }
       private:
         bool force_decays_in_detector = false;
+        double minimum_event_log_weight = std::numeric_limits<double>::lowest();
         physical_parameters pparams;
     };
   }

@@ -81,7 +81,16 @@ GELATO::core::particle_history GELATO::core::driver::generate_decays(
   // stage 3: generate decay positions
   const bool has_activity_inside_detector = generate_decay_position(top_parent.get(), rng);
 
-  if(has_activity_inside_detector) {
+  std::function<double(decaying_particle_info_ptr)> accumulate_weights =
+    [&accumulate_weights](decaying_particle_info_ptr particle) {
+    return std::accumulate(particle->get_children().begin(), particle->get_children().end(), particle->decay_log_weight(),
+        [&accumulate_weights](double a, auto& b){ return a + accumulate_weights(b.get()); });
+  };
+  const double event_log_weight =
+    configuration.get_minimum_event_log_weight() > std::numeric_limits<double>::lowest() ?
+    accumulate_weights(top_parent.get()) : 0.;
+
+  if(has_activity_inside_detector && event_log_weight >= configuration.get_minimum_event_log_weight()) {
     ret.build_hierarchy(std::move(top_parent));
   }
 
@@ -448,9 +457,14 @@ GELATO::core::driver::generate_decay_tree(decaying_particle_info_ptr parent, std
                 )
               );
           const double costh_2 = p2.vect().unit().dot(reference);
-          const double phi_2 = p2.vect().unit().delta_phi(reference);
           const double costh_3 = p3.vect().unit().dot(reference);
+#ifdef EXPOSE_PHYSICS_VECTORS
+          const double phi_2 = p2.vect().unit().deltaPhi(reference);
+          const double phi_23 = p2.vect().unit().deltaPhi(p3.vect().unit());
+#else
+          const double phi_2 = p2.vect().unit().delta_phi(reference);
           const double phi_23 = p2.vect().unit().delta_phi(p3.vect().unit());
+#endif
           const double dalitz_weight = dm.angular_threebody_dalitz_reweighter(
               red_invmass2_12,red_invmass2_13,costh_2,phi_2,costh_3,phi_23);
           parent->multiply_decay_log_weight(std::log(dalitz_weight));
