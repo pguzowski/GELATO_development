@@ -9,9 +9,12 @@
 #include <iostream>
 #endif
 
-GELATO::core::geometry::geometry(vector3 centre, vector3 dims, rotation rot_from_detctor_to_beamline_system)
+
+
+///////// BASE class: geometry /////////////////////////////////////////////////////////////////////////////
+
+GELATO::core::geometry::geometry(vector3 centre, rotation rot_from_detctor_to_beamline_system)
   : active_volume_centre_in_beamline_system{std::move(centre)},
-  active_volume_half_dimensions_in_detector_system{std::move(dims)},
   active_volume_rotation_from_detector_to_beamline_system{std::move(rot_from_detctor_to_beamline_system)}
 {
   make_active_volume_rotation_from_beamline_to_detector_system();
@@ -19,11 +22,6 @@ GELATO::core::geometry::geometry(vector3 centre, vector3 dims, rotation rot_from
 
 GELATO::core::geometry& GELATO::core::geometry::set_active_volume_centre_in_beamline_system(vector3 centre) {
   active_volume_centre_in_beamline_system = std::move(centre);
-  return *this;
-}
-
-GELATO::core::geometry& GELATO::core::geometry::set_active_volume_half_dimensions_in_detector_system(vector3 dims) {
-  active_volume_half_dimensions_in_detector_system = std::move(dims);
   return *this;
 }
 
@@ -44,12 +42,6 @@ void GELATO::core::geometry::make_active_volume_rotation_from_beamline_to_detect
 
 bool GELATO::core::geometry::is_beamline_vector_in_active_volume(const vector3& v) const {
   return is_detector_vector_in_active_volume(rotate_and_translate_beamline_vector_to_detector_coordinates(v));
-}
-
-bool GELATO::core::geometry::is_detector_vector_in_active_volume(const vector3& v) const {
-  return std::abs(v.x()) < active_volume_half_dimensions_in_detector_system.x()
-    && std::abs(v.y()) < active_volume_half_dimensions_in_detector_system.y()
-    && std::abs(v.z()) < active_volume_half_dimensions_in_detector_system.z();
 }
 
 GELATO::core::ordered_list_of_vectors GELATO::core::geometry::get_active_volume_intersections_for_beamline_vectors(
@@ -82,7 +74,62 @@ GELATO::core::ordered_list_of_vectors GELATO::core::geometry::get_active_volume_
   return r;
 }
 
-GELATO::core::ordered_list_of_vectors GELATO::core::geometry::get_active_volume_intersections_for_detector_vectors(
+GELATO::core::vector3 GELATO::core::geometry::rotate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
+  return active_volume_rotation_from_beamline_to_detector_system * vin;
+}
+
+std::pair<GELATO::core::vector3, GELATO::core::vector3>
+GELATO::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(
+    const vector3& vpos, const vector3& vdir) const {
+  vector3 new_vdir = active_volume_rotation_from_beamline_to_detector_system * vdir;
+  vector3 new_vpos =
+    active_volume_rotation_from_beamline_to_detector_system * (vpos - active_volume_centre_in_beamline_system);
+  return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
+}
+
+GELATO::core::vector3 GELATO::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
+  return active_volume_rotation_from_beamline_to_detector_system * (vin - active_volume_centre_in_beamline_system);
+}
+
+GELATO::core::vector3 GELATO::core::geometry::rotate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
+  return active_volume_rotation_from_detector_to_beamline_system * vin;
+}
+
+std::pair<GELATO::core::vector3, GELATO::core::vector3>
+GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(
+    const vector3& vpos, const vector3& vdir) const {
+  vector3 new_vdir = active_volume_rotation_from_detector_to_beamline_system * vdir;
+  vector3 new_vpos = active_volume_rotation_from_detector_to_beamline_system * vpos + active_volume_centre_in_beamline_system;
+  return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
+}
+
+GELATO::core::vector3
+GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
+  return active_volume_rotation_from_detector_to_beamline_system * vin + active_volume_centre_in_beamline_system;
+}
+
+
+
+///////// DERIVED class: box_geometry //////////////////////////////////////////////////////////////////////
+
+GELATO::core::box_geometry::box_geometry(vector3 centre, vector3 half_dims, rotation rot_from_detctor_to_beamline_system)
+  : GELATO::core::geometry{centre, rot_from_detctor_to_beamline_system},
+  active_volume_half_dimensions_in_detector_system{std::move(half_dims)}
+{
+}
+
+GELATO::core::box_geometry& GELATO::core::box_geometry::set_active_volume_half_dimensions_in_detector_system(vector3 dims) {
+  active_volume_half_dimensions_in_detector_system = std::move(dims);
+  return *this;
+}
+
+bool GELATO::core::box_geometry::is_detector_vector_in_active_volume(const vector3& v) const {
+  return std::abs(v.x()) < active_volume_half_dimensions_in_detector_system.x()
+    && std::abs(v.y()) < active_volume_half_dimensions_in_detector_system.y()
+    && std::abs(v.z()) < active_volume_half_dimensions_in_detector_system.z();
+}
+
+GELATO::core::ordered_list_of_vectors GELATO::core::box_geometry::get_active_volume_intersections_for_detector_vectors(
     const vector3& origin, const vector3& direction) const {
   ordered_list_of_vectors ret;
   // work out all coordinates that interesect the 6 planes of the bounding box
@@ -160,43 +207,8 @@ GELATO::core::ordered_list_of_vectors GELATO::core::geometry::get_active_volume_
   return ret;
 }
 
-GELATO::core::vector3 GELATO::core::geometry::rotate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
-  return active_volume_rotation_from_beamline_to_detector_system * vin;
-}
-
-std::pair<GELATO::core::vector3, GELATO::core::vector3>
-GELATO::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(
-    const vector3& vpos, const vector3& vdir) const {
-  vector3 new_vdir = active_volume_rotation_from_beamline_to_detector_system * vdir;
-  vector3 new_vpos =
-    active_volume_rotation_from_beamline_to_detector_system * (vpos - active_volume_centre_in_beamline_system);
-  return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
-}
-
-GELATO::core::vector3 GELATO::core::geometry::rotate_and_translate_beamline_vector_to_detector_coordinates(const vector3& vin) const {
-  return active_volume_rotation_from_beamline_to_detector_system * (vin - active_volume_centre_in_beamline_system);
-}
-
-GELATO::core::vector3 GELATO::core::geometry::rotate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
-  return active_volume_rotation_from_detector_to_beamline_system * vin;
-}
-
-std::pair<GELATO::core::vector3, GELATO::core::vector3>
-GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(
-    const vector3& vpos, const vector3& vdir) const {
-  vector3 new_vdir = active_volume_rotation_from_detector_to_beamline_system * vdir;
-  vector3 new_vpos = active_volume_rotation_from_detector_to_beamline_system * vpos + active_volume_centre_in_beamline_system;
-  return std::make_pair<>(std::move(new_vpos), std::move(new_vdir));
-}
-
-GELATO::core::vector3 GELATO::core::geometry::rotate_and_translate_detector_vector_to_beamline_coordinates(const vector3& vin) const {
-  return active_volume_rotation_from_detector_to_beamline_system * vin + active_volume_centre_in_beamline_system;
-}
-
-
-
 GELATO::core::ordered_list_of_vectors
-GELATO::core::geometry::project_detector_onto_first_vector_along_direction_of_second_vector(
+GELATO::core::box_geometry::project_detector_onto_first_vector_along_direction_of_second_vector(
   const vector3& origin1, const vector3& direction1, const vector3& direction2
 ) const {
   ordered_list_of_vectors ret;
@@ -245,3 +257,11 @@ GELATO::core::geometry::project_detector_onto_first_vector_along_direction_of_se
   }
   return ret;
 }
+
+
+
+///////// DERIVED class: sphere_geometry ///////////////////////////////////////////////////////////////////
+
+
+///////// DERIVED class: cylinder_geometry /////////////////////////////////////////////////////////////////
+
