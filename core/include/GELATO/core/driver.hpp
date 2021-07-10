@@ -19,19 +19,19 @@ namespace GELATO {
         driver& add_particle_definition(const particle_definition& p);
         driver& set_particle_content(const particle_map& p);
         driver& set_particle_content(particle_map&& p);
-        driver& set_geometry(const geometry& geom);
+        driver& set_geometry(std::unique_ptr<geometry>&& geom);
         driver& set_config(const config& conf);
         
         // main event loop: generate decay of initial particle
         particle_history generate_decays(const particle_info& initial_decay, random_uniform_0_1_generator rng) const;
 
-        const geometry& get_geometry() const { return geo; }
+        const geometry& get_geometry() const { return *geo_ptr; }
         
       private:
         using decaying_particle_info_ptr = decaying_particle_info*;
         
         particle_map particle_content;
-        geometry geo;
+        std::unique_ptr<geometry> geo_ptr;
         config configuration;
 
         // recursively generate decay positions, forcing some into the detector if

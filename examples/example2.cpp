@@ -47,8 +47,9 @@ int main(int argc, char** argv) {
 
   GELATO::core::driver driver;
 
-  GELATO::core::geometry geo({0,0,1.e4},{1e3,1e3,1e3});
-  driver.set_geometry(geo);
+  std::unique_ptr<GELATO::core::geometry> geo
+    = std::make_unique<GELATO::core::geometry>(GELATO::core::vector3{0,0,1.e4},GELATO::core::vector3{1e3,1e3,1e3});
+  driver.set_geometry(std::move(geo));
   GELATO::core::config conf;
   conf.fix_system_of_units(GELATO::core::config::system_of_units::GeV_cm_ns);
   conf.set_force_decays_in_detector(force);

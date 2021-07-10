@@ -202,27 +202,27 @@ int main(int argc, char** argv) {
   /*
    *                NUMI 
    */
-  GELATO::core::geometry geo({31387.58422, 3316.402543, 60100.2414},{1.25e2,1.25e2,5e2},
+  std::unique_ptr<GELATO::core::geometry> geo = std::make_unique<GELATO::core::geometry>(GELATO::core::vector3{31387.58422, 3316.402543, 60100.2414},GELATO::core::vector3{1.25e2,1.25e2,5e2},
     GELATO::core::rotation{}.rotate_axes({  0.92103853804025681562,    0.022713504803924120662,  0.38880857519374290021  }, 
                                         {  4.6254001262154668408e-05, 0.99829162468141474651,  -0.058427989452906302359 }, 
                                         { -0.38947144863934973769,    0.053832413938664107345,  0.91946400794392302291  }));
-  driver.set_geometry(geo);
+  driver.set_geometry(std::move(geo));
 
   } else if(geo_type=="bnb") {
     /*
      *                BNB
      */
-    GELATO::core::geometry geo({0., 0., 475e2}, {1.25e2, 1.25e2, 5e2});
-    driver.set_geometry(geo);
+    std::unique_ptr<GELATO::core::geometry> geo = std::make_unique<GELATO::core::geometry>(GELATO::core::vector3{0., 0., 475e2}, GELATO::core::vector3{1.25e2, 1.25e2, 5e2});
+    driver.set_geometry(std::move(geo));
   }
   else if(geo_type == "sbnd") {
-    GELATO::core::geometry geo({-74., 0., 110e2}, {2e2, 2e2, 2.5e2}); // sbnd is not directly on-axis, but offset by ~0.75m in x
-    driver.set_geometry(geo);
+    std::unique_ptr<GELATO::core::geometry> geo = std::make_unique<GELATO::core::geometry>(GELATO::core::vector3{-74., 0., 110e2}, GELATO::core::vector3{2e2, 2e2, 2.5e2}); // sbnd is not directly on-axis, but offset by ~0.75m in x
+    driver.set_geometry(std::move(geo));
   }
   else if(geo_type == "gastpc") {
     // dune gastpc is 5m-diameter, 5m long cylinder, and front is 579m from target
-    GELATO::core::geometry geo({0., 0., 581.5e2}, {2.5e2, 2.5e2, 2.5e2});
-    driver.set_geometry(geo);
+    std::unique_ptr<GELATO::core::geometry> geo = std::make_unique<GELATO::core::geometry>(GELATO::core::vector3{0., 0., 581.5e2}, GELATO::core::vector3{2.5e2, 2.5e2, 2.5e2});
+    driver.set_geometry(std::move(geo));
   }
   
   //const double scalar_mass = mass; // GeV

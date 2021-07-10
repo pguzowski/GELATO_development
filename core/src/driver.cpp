@@ -103,8 +103,8 @@ GELATO::core::driver& GELATO::core::driver::add_particle_definition(const GELATO
   return *this;
 }
 
-GELATO::core::driver& GELATO::core::driver::set_geometry(const GELATO::core::geometry& geom) {
-  geo = geom;
+GELATO::core::driver& GELATO::core::driver::set_geometry(std::unique_ptr<geometry>&& geom) {
+  geo_ptr = std::move(geom);
   return *this;
 }
 
@@ -161,8 +161,8 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
       };
       auto detector_points = 
         state == decaying_particle_info::state_types::pre_final_state
-        ? geo.get_active_volume_intersections_for_beamline_vectors(origin, direction)
-        : geo.project_detector_onto_first_vector_along_direction_of_second_vector(
+        ? geo_ptr->get_active_volume_intersections_for_beamline_vectors(origin, direction)
+        : geo_ptr->project_detector_onto_first_vector_along_direction_of_second_vector(
             origin, direction, find_pre_final_state_direction(parent));
       if(detector_points.size() >= 2) {
         const double speed = parent->production_momentum().beta() * configuration.physical_params().speed_of_light;
@@ -218,7 +218,7 @@ bool GELATO::core::driver::generate_decay_position(decaying_particle_info_ptr pa
 #endif
   // decay position is also set to production position for final states, so should still work for them
   const bool is_inside_detector = parent->is_final_state()
-    && geo.is_beamline_vector_in_active_volume(parent->decay_position().vect());
+    && geo_ptr->is_beamline_vector_in_active_volume(parent->decay_position().vect());
 
   return std::accumulate(parent->get_children().begin(), parent->get_children().end(), is_inside_detector,
       [this,rng](bool previous_result, const decaying_particle_info::child_t& current_daughter) -> bool {
