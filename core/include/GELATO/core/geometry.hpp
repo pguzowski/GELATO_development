@@ -60,7 +60,7 @@ namespace GELATO {
         vector3 active_volume_half_dimensions_in_detector_system;
     };
 
-    /*
+    
     class sphere_geometry : public geometry {
       public:
         sphere_geometry(vector3 centre, double rad);
@@ -77,6 +77,7 @@ namespace GELATO {
         double radius;
     };
 
+    /*
     // cylinder with length along local z coordinate, and radius in local x-y plane
     class cylinder_geometry : public geometry {
       public:

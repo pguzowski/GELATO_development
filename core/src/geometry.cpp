@@ -263,5 +263,87 @@ GELATO::core::box_geometry::project_detector_onto_first_vector_along_direction_o
 ///////// DERIVED class: sphere_geometry ///////////////////////////////////////////////////////////////////
 
 
+GELATO::core::sphere_geometry::sphere_geometry(vector3 centre, double rad)
+  : GELATO::core::geometry{centre}, radius{rad}
+{
+}
+
+bool GELATO::core::sphere_geometry::is_detector_vector_in_active_volume(const vector3& v) const {
+  return v.mag() < radius;
+}
+
+GELATO::core::ordered_list_of_vectors GELATO::core::sphere_geometry::get_active_volume_intersections_for_detector_vectors(
+    const vector3& origin, const vector3& direction) const {
+  GELATO::core::ordered_list_of_vectors ret;
+  const vector3& dir = direction.unit();
+  const double dotp = dir.dot(origin);
+  const double dca = (origin - dotp * dir).mag();
+  if(dca < radius) {
+    // solve |origin + a * dir| == radius
+    const double sqrtbit = std::sqrt(dotp * dotp - origin.dot(origin) + radius * radius);
+    const double a1 = -dotp - sqrtbit;
+    const double a2 = -dotp + sqrtbit;
+    if(a1 > 0.) {
+      ret.add(a1, origin + a1 * dir);
+    }
+    else {
+      ret.add(0., origin);
+    }
+    if(a2 > 0.) {
+      ret.add(a2, origin + a2 * dir);
+    }
+    else if(a1 > 0.) {
+      ret.add(0., origin);
+    }
+  }
+  return ret;
+}
+
+GELATO::core::ordered_list_of_vectors
+GELATO::core::sphere_geometry::project_detector_onto_first_vector_along_direction_of_second_vector(
+  const vector3& origin1, const vector3& direction1, const vector3& direction2
+) const {
+  GELATO::core::ordered_list_of_vectors ret;
+  const vector3& dir1 = direction1.unit();
+  const vector3& dir2 = direction2.unit();
+  const double dotp = dir1.dot(dir2);
+  if(dotp > -1. && dotp < -1.) {
+    // find extremes of sphere perpendicular to direction2
+    const vector3& xdir = dir1.cross(dir2).unit();
+    const double xdist = xdir.dot(active_volume_centre_in_beamline_system - origin1);
+    const vector3& proj_centre = active_volume_centre_in_beamline_system - xdist * xdir;
+    const vector3& perpto_dir2 = dir2.cross(xdir).unit();
+    const vector3& tangent1 = proj_centre + radius * perpto_dir2;
+    const vector3& tangent2 = proj_centre - radius * perpto_dir2;
+    const double dist1 = dir1.dot(tangent1 - origin1);
+    const double dist2 = dir1.dot(tangent2 - origin1);
+    if(dist1 > 0.) {
+      ret.add(dist1, origin1 + dist1 * dir1);
+    }
+    else {
+      ret.add(0., origin1);
+    }
+    if(dist2 > 0.) {
+      ret.add(dist2, origin1 + dist2 * dir1);
+    }
+    else if(dist1 > 0.) {
+      ret.add(0., origin1);
+    }
+  }
+  else if(dotp <= -1.) {
+    // direction2 is antiparallel to direction1; return empty list
+    return ret;
+  }
+  else if(dotp >= 1.) {
+    ret.add(0., origin1);
+    const vector3& max_point_along_direction = active_volume_centre_in_beamline_system + dir1 * radius;
+    const double dist = dir1.dot(max_point_along_direction - origin1);
+    if(dist > 0.) {
+      ret.add(dist, origin1 + dist * dir1);
+    }
+  }
+  return ret;
+}
+
 ///////// DERIVED class: cylinder_geometry /////////////////////////////////////////////////////////////////
 

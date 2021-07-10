@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
     if(i+1 < argc && std::string(argv[i]) == "-g") { // production modes to simulate
       geo_type = argv[i+1];
       i++;
-      if(geo_type != "bnb" && geo_type != "numi" && geo_type != "sbnd" && geo_type !="gastpc") {
+      if(geo_type != "bnb" && geo_type != "numi" && geo_type != "sbnd" && geo_type !="gastpc" && geo_type != "miniboone") {
         std::cerr << " Geometry type "<<geo_type<<" must be 'bnb' or 'numi' or 'sbnd' or 'gastpc' (default bnb)"<<std::endl;
         return -1;
       }
@@ -222,6 +222,10 @@ int main(int argc, char** argv) {
   else if(geo_type == "gastpc") {
     // dune gastpc is 5m-diameter, 5m long cylinder, and front is 579m from target
     std::unique_ptr<GELATO::core::geometry> geo = std::make_unique<GELATO::core::box_geometry>(GELATO::core::vector3{0., 0., 581.5e2}, GELATO::core::vector3{2.5e2, 2.5e2, 2.5e2});
+    driver.set_geometry(std::move(geo));
+  }
+  else if(geo_type == "miniboone") {
+    std::unique_ptr<GELATO::core::geometry> geo = std::make_unique<GELATO::core::sphere_geometry>(GELATO::core::vector3{0.,0.,541e2}, 6.1e2);
     driver.set_geometry(std::move(geo));
   }
   

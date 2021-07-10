@@ -60,6 +60,8 @@ namespace GELATO {
 
         double dot(const vector3& v) const;
         double delta_phi(const vector3& v) const;
+
+        vector3 cross(const vector3& v) const;
       private:
         struct _vector3_impl_;
         //using impl_ptr = std::experimental::propagate_const<std::unique_ptr<_vector3_impl_>>;

@@ -227,6 +227,15 @@ double GELATO::core::vector3::delta_phi(const vector3& v) const {
 #endif
 }
 
+GELATO::core::vector3 GELATO::core::vector3::cross(const vector3& v) const {
+  vector3 ret(*this);
+#ifdef USING_CLHEP
+  ret.impl->cross(*v.impl);
+#elif defined USING_ROOT
+  ret.impl->Cross(*v.impl);
+#endif
+  return ret;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
