@@ -552,6 +552,15 @@ GELATO::core::rotation& GELATO::core::rotation::rotate_axes(const vector3& new_x
 }
 
 
+GELATO::core::rotation& GELATO::core::rotation::rotate(double angle, const vector3& axis) {
+#ifdef USING_CLHEP
+  impl->rotate(angle, *axis.impl);
+#elif defined USING_ROOT
+  impl->Rotate(angle, *axis.impl);
+#endif
+  return *this;
+}
+
 
 #undef USING_CLHEP
 #undef USING_ROOT

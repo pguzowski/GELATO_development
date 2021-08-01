@@ -92,7 +92,7 @@ namespace GELATO {
         decaying_particle_info& set_production_position(const fourvector& pos);
         decaying_particle_info& set_production_position(fourvector&& pos);
 
-        decaying_particle_info& set_decay_log_weight(double log_wt) { part_info.log_weight = log_wt; return *this; };
+        decaying_particle_info& reset_decay_log_weight() { part_info.log_weight = 0.; return *this; };
         decaying_particle_info& multiply_decay_log_weight(double log_wt) { part_info.log_weight += log_wt; return *this; };
 
         decaying_particle_info* get_parent() const { return parent; }

@@ -145,6 +145,7 @@ namespace GELATO {
         vector3 operator*(const vector3& v) const;
 
         rotation& rotate_axes(const vector3& new_x_axis, const vector3& new_y_axis, const vector3& new_z_axis);
+        rotation& rotate(double angle, const vector3& axis);
 
         rotation& invert();
         rotation get_inverse() const;
