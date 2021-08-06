@@ -307,7 +307,7 @@ GELATO::core::sphere_geometry::project_detector_onto_first_vector_along_directio
   const vector3& dir1 = direction1.unit();
   const vector3& dir2 = direction2.unit();
   const double dotp = dir1.dot(dir2);
-  if(dotp > -1. && dotp < -1.) {
+  if(dotp > -1. && dotp < 1.) {
     // find extremes of sphere perpendicular to direction2
     const vector3& xdir = dir1.cross(dir2).unit();
     const double xdist = xdir.dot(active_volume_centre_in_beamline_system - origin1);
